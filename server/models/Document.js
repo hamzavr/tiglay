@@ -50,15 +50,15 @@ const Document = sequelize.define('Document', {
     type: DataTypes.STRING
   },
   supplierId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: true
   },
   clientId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: true
   },
   userId: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: true
   },
   linkedDocuments: {

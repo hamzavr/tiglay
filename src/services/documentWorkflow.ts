@@ -21,16 +21,27 @@ export interface SupplierOrderData {
   id: string;
   supplierId: string;
   total: number;
+  // Items provenant du stock existant (peuvent contenir name/code selon la source)
   items: Array<{
-    code: string;
-    description: string;
+    code?: string;
+    name?: string;
+    description?: string;
     quantity: number;
-    unit: string;
+    unit?: string;
     unitPrice: number;
     total: number;
   }>;
+  // Nouveaux produits créés à la volée
+  newProducts?: Array<{
+    name: string;
+    nameAr?: string;
+    code: string;
+    category: string;
+    unitPrice: number;
+    quantity: number;
+    total: number;
+  }>;
   deliveryDate: string;
-  paymentTerms: string;
   notes: string;
 }
 
@@ -135,19 +146,35 @@ class DocumentWorkflowService {
    */
   async createSupplierPurchaseOrder(orderData: SupplierOrderData) {
     try {
-      // Créer des notes détaillées avec toutes les informations
+      // Concaténer items et nouveaux produits en une seule liste pour affichage
+      const combinedItems = [
+        ...(orderData.items || []),
+        ...((orderData.newProducts || []).map(np => ({
+          code: np.code,
+          name: np.name,
+          description: np.name, // fallback pour affichage
+          quantity: np.quantity,
+          unit: 'U',
+          unitPrice: np.unitPrice,
+          total: np.total
+        })))
+      ];
+
+      // Créer des notes détaillées structurées (sans conditions de paiement)
       const detailedNotes = `
 Commande fournisseur détaillée:
-- Date de livraison souhaitée: ${orderData.deliveryDate}
-- Conditions de paiement: ${orderData.paymentTerms}
+- Date de livraison souhaitée: ${orderData.deliveryDate || ''}
 - Total: ${orderData.total.toLocaleString()} DH
 
 Produits commandés:
-${orderData.items.map(item => 
-  `• ${item.code} - ${item.description}: ${item.quantity} ${item.unit} × ${item.unitPrice} DH = ${item.total} DH`
-).join('\n')}
+${combinedItems.map(item => {
+  const code = item.code ?? '-';
+  const name = item.name ?? item.description ?? '-';
+  const unit = item.unit ?? 'U';
+  return `• ${code} - ${name}: ${item.quantity} ${unit} × ${item.unitPrice} DH = ${item.total} DH`;
+}).join('\n')}
 
-Notes: ${orderData.notes}
+Notes: ${orderData.notes || ''}
       `.trim();
 
       const purchaseOrder = await documentsAPI.create({

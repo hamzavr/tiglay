@@ -665,42 +665,44 @@ const Documents: React.FC = () => {
                 </div>
               </div>
 
-              {/* Client/Supplier Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Client
-                  </label>
-                  <select
-                    value={formData.clientId || ''}
-                    onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    title="Sélectionner un client"
-                  >
-                    <option value="">Sélectionner un client</option>
-                    {(clients || []).map((client: Client) => (
-                      <option key={client.id} value={client.id}>{client.name}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Client/Supplier Selection - Hidden for supplier_purchase_order */}
+              {formData.type !== 'supplier_purchase_order' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Client
+                    </label>
+                    <select
+                      value={formData.clientId || ''}
+                      onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      title="Sélectionner un client"
+                    >
+                      <option value="">Sélectionner un client</option>
+                      {(clients || []).map((client: Client) => (
+                        <option key={client.id} value={client.id}>{client.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Fournisseur
-                  </label>
-                  <select
-                    value={formData.supplierId || ''}
-                    onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    title="Sélectionner un fournisseur"
-                  >
-                    <option value="">Sélectionner un fournisseur</option>
-                    {(suppliers || []).map((supplier: Supplier) => (
-                      <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Fournisseur
+                    </label>
+                    <select
+                      value={formData.supplierId || ''}
+                      onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      title="Sélectionner un fournisseur"
+                    >
+                      <option value="">Sélectionner un fournisseur</option>
+                      {(suppliers || []).map((supplier: Supplier) => (
+                        <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Items Table - Only for manual documents or when creating */}
               {(!editingDocument || !['supplier_purchase_order', 'customer_sales_order', 'delivery_note', 'invoice'].includes(formData.type)) && (
@@ -843,19 +845,163 @@ const Documents: React.FC = () => {
                 </div>
               )}
 
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notes (optionnel)
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  rows={4}
-                  placeholder="Notes et conditions..."
-                />
-              </div>
+              {/* Supplier Order Details for editing supplier_purchase_order */}
+              {editingDocument && formData.type === 'supplier_purchase_order' && formData.notes ? (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande fournisseur</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
+                    {(() => {
+                      const notes = formData.notes;
+                      const lines = notes.split('\n');
+                      const deliveryDateLine = lines.find(line => line.includes('Date de livraison souhaitée:'));
+                      const totalLine = lines.find(line => line.includes('Total:'));
+                      const productsStartIndex = lines.findIndex(line => line.includes('Produits commandés:'));
+                      const notesStartIndex = lines.findIndex(line => line.includes('Notes:'));
+                      
+                      const deliveryDate = deliveryDateLine ? deliveryDateLine.split(': ')[1] : '';
+                      const total = totalLine ? totalLine.split(': ')[1] : '';
+                      const products = lines.slice(productsStartIndex + 1, notesStartIndex).filter(line => line.trim().startsWith('•'));
+                      const notesText = notesStartIndex >= 0 ? lines.slice(notesStartIndex + 1).join('\n').trim() : '';
+                      
+                      return (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Date de livraison souhaitée
+                              </label>
+                              <input
+                                type="date"
+                                value={deliveryDate}
+                                onChange={(e) => {
+                                  const newNotes = notes.replace(
+                                    /Date de livraison souhaitée: .*/,
+                                    `Date de livraison souhaitée: ${e.target.value}`
+                                  );
+                                  setFormData({ ...formData, notes: newNotes });
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Total
+                              </label>
+                              <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                                {total}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {products.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Produits commandés
+                              </label>
+                              <div className="space-y-2">
+                                {products.map((product, index) => {
+                                  const parts = product.replace('• ', '').split(': ');
+                                  const nameCode = parts[0];
+                                  const details = parts[1] ? parts[1].split(' × ') : [];
+                                  const quantityUnit = details[0] ? details[0].split(' ') : [];
+                                  const priceTotal = details[1] ? details[1].split(' = ') : [];
+                                  
+                                  return (
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Nom/Code</label>
+                                        <input
+                                          type="text"
+                                          value={nameCode}
+                                          onChange={(e) => {
+                                            const newProduct = product.replace(nameCode, e.target.value);
+                                            const newNotes = notes.replace(product, newProduct);
+                                            setFormData({ ...formData, notes: newNotes });
+                                          }}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité</label>
+                                        <input
+                                          type="number"
+                                          value={quantityUnit[0] || ''}
+                                          onChange={(e) => {
+                                            const newQuantity = e.target.value;
+                                            const newDetails = `${newQuantity} ${quantityUnit[1] || 'U'} × ${priceTotal[0] || '0'} = ${(parseFloat(newQuantity) * parseFloat(priceTotal[0] || '0')).toFixed(2)} DH`;
+                                            const newProduct = product.replace(details[0], newDetails);
+                                            const newNotes = notes.replace(product, newProduct);
+                                            setFormData({ ...formData, notes: newNotes });
+                                          }}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Prix unitaire</label>
+                                        <input
+                                          type="number"
+                                          value={priceTotal[0] || ''}
+                                          onChange={(e) => {
+                                            const newPrice = e.target.value;
+                                            const newDetails = `${quantityUnit[0] || '1'} ${quantityUnit[1] || 'U'} × ${newPrice} = ${(parseFloat(quantityUnit[0] || '1') * parseFloat(newPrice)).toFixed(2)} DH`;
+                                            const newProduct = product.replace(details[0], newDetails);
+                                            const newNotes = notes.replace(product, newProduct);
+                                            setFormData({ ...formData, notes: newNotes });
+                                          }}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Total</label>
+                                        <div className="text-sm font-medium text-gray-900 dark:text-white py-1">
+                                          {priceTotal[1] || '0 DH'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                              Notes
+                            </label>
+                            <textarea
+                              value={notesText}
+                              onChange={(e) => {
+                                const newNotes = notes.replace(
+                                  /Notes: .*/s,
+                                  `Notes: ${e.target.value}`
+                                );
+                                setFormData({ ...formData, notes: newNotes });
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              rows={3}
+                              placeholder="Notes et conditions..."
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : (
+                /* Regular Notes for other document types */
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Notes (optionnel)
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    rows={4}
+                    placeholder="Notes et conditions..."
+                  />
+                </div>
+              )}
 
               <div className="flex justify-end space-x-3">
                 <Button variant="secondary" onClick={closeModal}>
@@ -1016,8 +1162,62 @@ const Documents: React.FC = () => {
                 </div>
               )}
 
-              {/* Notes */}
-              {viewingDocument.notes && (
+              {/* Supplier Order Details for supplier_purchase_order */}
+              {viewingDocument.type === 'supplier_purchase_order' && viewingDocument.notes ? (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande fournisseur</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-3">
+                    {(() => {
+                      const notes = viewingDocument.notes;
+                      const lines = notes.split('\n');
+                      const deliveryDateLine = lines.find(line => line.includes('Date de livraison souhaitée:'));
+                      const totalLine = lines.find(line => line.includes('Total:'));
+                      const productsStartIndex = lines.findIndex(line => line.includes('Produits commandés:'));
+                      const notesStartIndex = lines.findIndex(line => line.includes('Notes:'));
+                      
+                      const deliveryDate = deliveryDateLine ? deliveryDateLine.split(': ')[1] : '';
+                      const total = totalLine ? totalLine.split(': ')[1] : '';
+                      const products = lines.slice(productsStartIndex + 1, notesStartIndex).filter(line => line.trim().startsWith('•'));
+                      const notesText = notesStartIndex >= 0 ? lines.slice(notesStartIndex + 1).join('\n').trim() : '';
+                      
+                      return (
+                        <>
+                          {deliveryDate && (
+                            <div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">Date de livraison souhaitée:</span>
+                              <span className="ml-2 text-gray-900 dark:text-white">{deliveryDate}</span>
+                            </div>
+                          )}
+                          {total && (
+                            <div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                              <span className="ml-2 text-gray-900 dark:text-white">{total}</span>
+                            </div>
+                          )}
+                          {products.length > 0 && (
+                            <div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Produits commandés:</span>
+                              <div className="space-y-1">
+                                {products.map((product, index) => (
+                                  <div key={index} className="text-sm text-gray-900 dark:text-white">
+                                    {product.replace('• ', '')}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {notesText && (
+                            <div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 block mb-1">Notes:</span>
+                              <div className="text-sm text-gray-900 dark:text-white">{notesText}</div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              ) : viewingDocument.notes && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Notes

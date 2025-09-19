@@ -7,7 +7,6 @@ import Header from './components/layout/Header';
 import Sidebar from './components/layout/Sidebar';
 import MobileNav from './components/layout/MobileNav';
 import Dashboard from './components/modules/Dashboard';
-import POS from './components/modules/POS';
 import Inventory from './components/modules/Inventory';
 import Suppliers from './components/modules/Suppliers';
 import Clients from './components/modules/Clients';
@@ -38,8 +37,6 @@ function AppContent() {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard />;
-      case 'pos':
-        return <POS />;
       case 'inventory':
         return <Inventory />;
       case 'suppliers':

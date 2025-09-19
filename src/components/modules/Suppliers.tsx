@@ -29,19 +29,29 @@ interface SupplierFormData {
 
 interface OrderItem {
   id: string;
-  code: string;
-  description: string;
+  name: string;
   quantity: number;
   unit: string;
   unitPrice: number;
   total: number;
 }
 
+interface NewProductItem {
+  id: string;
+  name: string;
+  nameAr: string;
+  code: string;
+  category: string;
+  unitPrice: number;
+  quantity: number;
+  total: number;
+}
+
 interface OrderFormData {
   deliveryDate: string;
-  paymentTerms: string;
   notes: string;
   items: OrderItem[];
+  newProducts: NewProductItem[];
 }
 
 const Suppliers: React.FC = () => {
@@ -60,9 +70,9 @@ const Suppliers: React.FC = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [orderForm, setOrderForm] = useState<OrderFormData>({
     deliveryDate: '',
-    paymentTerms: '30 jours',
     notes: '',
-    items: []
+    items: [],
+    newProducts: []
   });
 
   const { data: suppliers = [], loading: suppliersLoading, execute: fetchSuppliers } = useApi(suppliersAPI.getAll);
@@ -106,9 +116,9 @@ const Suppliers: React.FC = () => {
     setSelectedSupplier(supplier);
     setOrderForm({
       deliveryDate: '',
-      paymentTerms: '30 jours',
       notes: '',
-      items: []
+      items: [],
+      newProducts: []
     });
     setShowOrderModal(true);
   };
@@ -118,17 +128,16 @@ const Suppliers: React.FC = () => {
     setSelectedSupplier(null);
     setOrderForm({
       deliveryDate: '',
-      paymentTerms: '30 jours',
       notes: '',
-      items: []
+      items: [],
+      newProducts: []
     });
   };
 
   const addOrderItem = () => {
     const newItem: OrderItem = {
       id: `item-${Date.now()}`,
-      code: '',
-      description: '',
+      name: '',
       quantity: 1,
       unit: 'U',
       unitPrice: 0,
@@ -140,10 +149,34 @@ const Suppliers: React.FC = () => {
     }));
   };
 
+  const addNewProductItem = () => {
+    const newProduct: NewProductItem = {
+      id: `new-product-${Date.now()}`,
+      name: '',
+      nameAr: '',
+      code: '',
+      category: '',
+      unitPrice: 0,
+      quantity: 1,
+      total: 0
+    };
+    setOrderForm(prev => ({
+      ...prev,
+      newProducts: [...prev.newProducts, newProduct]
+    }));
+  };
+
   const removeOrderItem = (itemId: string) => {
     setOrderForm(prev => ({
       ...prev,
       items: prev.items.filter(item => item.id !== itemId)
+    }));
+  };
+
+  const removeNewProductItem = (itemId: string) => {
+    setOrderForm(prev => ({
+      ...prev,
+      newProducts: prev.newProducts.filter(item => item.id !== itemId)
     }));
   };
 
@@ -164,8 +197,51 @@ const Suppliers: React.FC = () => {
     }));
   };
 
+  const updateNewProductItem = (itemId: string, field: keyof NewProductItem, value: any) => {
+    setOrderForm(prev => ({
+      ...prev,
+      newProducts: prev.newProducts.map(item => {
+        if (item.id === itemId) {
+          const updatedItem = { ...item, [field]: value };
+          // Recalculer le total
+          if (field === 'quantity' || field === 'unitPrice') {
+            updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+          }
+          return updatedItem;
+        }
+        return item;
+      })
+    }));
+  };
+
   const getOrderTotal = () => {
-    return orderForm.items.reduce((sum, item) => sum + item.total, 0);
+    const itemsTotal = orderForm.items.reduce((sum, item) => sum + item.total, 0);
+    const newProductsTotal = orderForm.newProducts.reduce((sum, item) => sum + item.total, 0);
+    return itemsTotal + newProductsTotal;
+  };
+
+  // Suggestions de matériaux de construction
+  const constructionMaterials = [
+    'Ciment Portland', 'Ciment gris', 'Ciment blanc', 'Ciment prompt',
+    'Briques rouges', 'Briques creuses', 'Briques pleines', 'Briques réfractaires',
+    'Sable fin', 'Sable grossier', 'Sable de rivière', 'Sable de carrière',
+    'Gravier 3/8', 'Gravier 6/12', 'Gravier 12/20', 'Gravier 20/40',
+    'Fer à béton 6mm', 'Fer à béton 8mm', 'Fer à béton 10mm', 'Fer à béton 12mm',
+    'Trellis soudé', 'Grillage soudé', 'Fils de fer', 'Clous',
+    'Béton prêt à l\'emploi', 'Mortier', 'Enduit', 'Plâtre',
+    'Carrelage', 'Faïence', 'Mosaïque', 'Pavé',
+    'Tuiles', 'Ardoises', 'Tôles ondulées', 'Bardage',
+    'Isolant thermique', 'Isolant phonique', 'Laine de verre', 'Polystyrène',
+    'Peinture', 'Primaire', 'Sous-couche', 'Vernis',
+    'Porte', 'Fenêtre', 'Volets', 'Persiennes',
+    'Électricité', 'Câbles', 'Interrupteurs', 'Prises',
+    'Plomberie', 'Tuyaux', 'Robinetterie', 'Éviers'
+  ];
+
+  const getFilteredMaterials = (searchTerm: string) => {
+    return constructionMaterials.filter(material =>
+      material.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,13 +278,8 @@ const Suppliers: React.FC = () => {
   };
 
   const handleCreateOrder = async () => {
-    if (!selectedSupplier || orderForm.items.length === 0) {
+    if (!selectedSupplier || (orderForm.items.length === 0 && orderForm.newProducts.length === 0)) {
       alert('Veuillez ajouter au moins un produit à la commande');
-      return;
-    }
-
-    if (!orderForm.deliveryDate) {
-      alert('Veuillez spécifier une date de livraison');
       return;
     }
 
@@ -219,8 +290,8 @@ const Suppliers: React.FC = () => {
         supplierId: selectedSupplier.id,
         total: getOrderTotal(),
         items: orderForm.items,
+        newProducts: orderForm.newProducts,
         deliveryDate: orderForm.deliveryDate,
-        paymentTerms: orderForm.paymentTerms,
         notes: orderForm.notes
       };
 
@@ -473,34 +544,17 @@ const Suppliers: React.FC = () => {
 
             <div className="space-y-6">
               {/* Order Details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date de livraison souhaitée *
+                    Date de livraison souhaitée
                   </label>
                   <input
                     type="date"
                     value={orderForm.deliveryDate}
                     onChange={(e) => setOrderForm({ ...orderForm, deliveryDate: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Conditions de paiement
-                  </label>
-                  <select
-                    value={orderForm.paymentTerms}
-                    onChange={(e) => setOrderForm({ ...orderForm, paymentTerms: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="Comptant">Comptant</option>
-                    <option value="30 jours">30 jours</option>
-                    <option value="60 jours">60 jours</option>
-                    <option value="90 jours">90 jours</option>
-                  </select>
                 </div>
 
                 <div>
@@ -517,119 +571,273 @@ const Suppliers: React.FC = () => {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-lg font-medium text-gray-900 dark:text-white">Produits commandés</h4>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<PlusIcon className="w-4 h-4" />}
-                    onClick={addOrderItem}
-                  >
-                    {t('addProduct')}
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<PlusIcon className="w-4 h-4" />}
+                      onClick={addOrderItem}
+                    >
+                      Ajouter un produit
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={<PlusIcon className="w-4 h-4" />}
+                      onClick={addNewProductItem}
+                    >
+                      Ajouter un nouveau produit
+                    </Button>
+                  </div>
                 </div>
 
-                {orderForm.items.length === 0 ? (
+                {orderForm.items.length === 0 && orderForm.newProducts.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    {t('noProductsAdded')}
+                    Aucun produit ajouté
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <thead className="bg-gray-50 dark:bg-gray-800">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Code
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Description
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Quantité
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Unité
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Prix Unitaire
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Total
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
-                        {orderForm.items.map((item, index) => (
-                          <tr key={item.id}>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={item.code}
-                                onChange={(e) => updateOrderItem(item.id, 'code', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                placeholder="Code produit"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={item.description}
-                                onChange={(e) => updateOrderItem(item.id, 'description', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                placeholder="Description du produit"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                min="1"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <select
-                                value={item.unit}
-                                onChange={(e) => updateOrderItem(item.id, 'unit', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                              >
-                                <option value="U">U</option>
-                                <option value="KG">KG</option>
-                                <option value="M">M</option>
-                                <option value="L">L</option>
-                                <option value="PCS">PCS</option>
-                              </select>
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="number"
-                                value={item.unitPrice}
-                                onChange={(e) => updateOrderItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                min="0"
-                                step="0.01"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {item.total.toLocaleString()} DH
-                              </div>
-                            </td>
-                            <td className="px-3 py-2">
-                              <button
-                                onClick={() => removeOrderItem(item.id)}
-                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                                title="Supprimer ce produit"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="space-y-6">
+                    {/* Produits existants */}
+                    {orderForm.items.length > 0 && (
+                      <div>
+                        <h5 className="text-md font-medium text-gray-900 dark:text-white mb-3">Produits existants</h5>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <thead className="bg-gray-50 dark:bg-gray-800">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Nom
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Quantité
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Unité
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Prix Unitaire
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Total
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                              {orderForm.items.map((item, index) => (
+                                <tr key={item.id}>
+                                  <td className="px-3 py-2">
+                                    <div className="relative">
+                                      <input
+                                        type="text"
+                                        value={item.name}
+                                        onChange={(e) => updateOrderItem(item.id, 'name', e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                        placeholder="Nom du produit"
+                                      />
+                                      {item.name && (
+                                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                                          {getFilteredMaterials(item.name).slice(0, 5).map((material, idx) => (
+                                            <div
+                                              key={idx}
+                                              className="px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                                              onClick={() => updateOrderItem(item.id, 'name', material)}
+                                            >
+                                              {material}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      min="1"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <select
+                                      value={item.unit}
+                                      onChange={(e) => updateOrderItem(item.id, 'unit', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                    >
+                                      <option value="U">U</option>
+                                      <option value="KG">KG</option>
+                                      <option value="M">M</option>
+                                      <option value="L">L</option>
+                                      <option value="PCS">PCS</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="number"
+                                      value={item.unitPrice}
+                                      onChange={(e) => updateOrderItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      min="0"
+                                      step="0.01"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {item.total.toLocaleString()} DH
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <button
+                                      onClick={() => removeOrderItem(item.id)}
+                                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                      title="Supprimer ce produit"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nouveaux produits */}
+                    {orderForm.newProducts.length > 0 && (
+                      <div>
+                        <h5 className="text-md font-medium text-gray-900 dark:text-white mb-3">Nouveaux produits</h5>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <thead className="bg-gray-50 dark:bg-gray-800">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Nom *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Nom en arabe
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Code *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Catégorie *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Prix unitaire *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Quantité *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Total
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                              {orderForm.newProducts.map((item, index) => (
+                                <tr key={item.id}>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      value={item.name}
+                                      onChange={(e) => updateNewProductItem(item.id, 'name', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      placeholder="Nom du produit"
+                                      required
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      value={item.nameAr}
+                                      onChange={(e) => updateNewProductItem(item.id, 'nameAr', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      placeholder="الاسم بالعربية"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      value={item.code}
+                                      onChange={(e) => updateNewProductItem(item.id, 'code', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      placeholder="Code produit"
+                                      required
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <select
+                                      value={item.category}
+                                      onChange={(e) => updateNewProductItem(item.id, 'category', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      required
+                                    >
+                                      <option value="">Sélectionner</option>
+                                      <option value="Ciment">Ciment</option>
+                                      <option value="Briques">Briques</option>
+                                      <option value="Sable">Sable</option>
+                                      <option value="Gravier">Gravier</option>
+                                      <option value="Fer">Fer</option>
+                                      <option value="Béton">Béton</option>
+                                      <option value="Carrelage">Carrelage</option>
+                                      <option value="Toiture">Toiture</option>
+                                      <option value="Isolation">Isolation</option>
+                                      <option value="Peinture">Peinture</option>
+                                      <option value="Menuiserie">Menuiserie</option>
+                                      <option value="Électricité">Électricité</option>
+                                      <option value="Plomberie">Plomberie</option>
+                                      <option value="Autre">Autre</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="number"
+                                      value={item.unitPrice}
+                                      onChange={(e) => updateNewProductItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      min="0"
+                                      step="0.01"
+                                      required
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => updateNewProductItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      min="1"
+                                      required
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {item.total.toLocaleString()} DH
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <button
+                                      onClick={() => removeNewProductItem(item.id)}
+                                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                                      title="Supprimer ce nouveau produit"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -667,7 +875,7 @@ const Suppliers: React.FC = () => {
               <Button 
                 variant="primary" 
                 onClick={handleCreateOrder}
-                disabled={orderForm.items.length === 0 || !orderForm.deliveryDate}
+                disabled={orderForm.items.length === 0 && orderForm.newProducts.length === 0}
               >
                 Créer Commande
               </Button>

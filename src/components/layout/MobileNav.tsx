@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   LayoutDashboard,
-  ShoppingCart,
   Package,
   Users,
   UserCheck,
@@ -21,7 +20,6 @@ const MobileNav: React.FC<MobileNavProps> = ({ activeTab, setActiveTab }) => {
 
   const menuItems = [
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { id: 'pos', label: t('pos'), icon: ShoppingCart },
     { id: 'inventory', label: t('inventory'), icon: Package },
     { id: 'suppliers', label: t('suppliers'), icon: Users },
     { id: 'clients', label: t('clients'), icon: UserCheck },
