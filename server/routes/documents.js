@@ -155,7 +155,7 @@ router.put('/:id', [auth, authorize('admin', 'manager', 'cashier')], async (req,
     console.log('Updating document with data:', req.body);
 
     // Only update allowed fields to prevent issues
-    const allowedFields = ['status', 'notes', 'amount', 'paidAmount', 'paymentMethod', 'clientId', 'supplierId'];
+    const allowedFields = ['type', 'status', 'notes', 'amount', 'paidAmount', 'paymentMethod', 'clientId', 'supplierId', 'items'];
     const updateData = {};
     
     allowedFields.forEach(field => {

@@ -75,6 +75,73 @@ const Inventory: React.FC = () => {
     fetchProducts({ search: searchTerm });
   }, [searchTerm]);
 
+  // Vérifier s'il y a des données pré-remplies depuis la page Documents
+  useEffect(() => {
+    const prefilledData = localStorage.getItem('prefilledProductData');
+    if (prefilledData) {
+      try {
+        const productData = JSON.parse(prefilledData);
+        
+        // Pré-remplir le formulaire avec les données
+        setFormData({
+          name: productData.name || '',
+          nameAr: '',
+          code: productData.code || '',
+          description: '',
+          category: productData.category || 'Autre',
+          size: '',
+          buyPrice: productData.unitPrice || 0,
+          sellPrice: 0,
+          stock: productData.quantity || 0,
+          minStock: 5,
+          expiryDate: '',
+          location: ''
+        });
+        
+        // Ouvrir automatiquement le modal d'ajout
+        setIsModalOpen(true);
+        
+        // Supprimer les données du localStorage après utilisation
+        localStorage.removeItem('prefilledProductData');
+      } catch (error) {
+        console.error('Erreur lors du parsing des données pré-remplies:', error);
+        localStorage.removeItem('prefilledProductData');
+      }
+    }
+  }, []);
+
+  // Écouter l'événement personnalisé pour ouvrir le modal depuis Documents
+  useEffect(() => {
+    const handleOpenInventoryModal = (event: CustomEvent) => {
+      const productData = event.detail.prefilledData;
+      
+      // Pré-remplir le formulaire avec les données
+      setFormData({
+        name: productData.name || '',
+        nameAr: '',
+        code: productData.code || '',
+        description: '',
+        category: productData.category || 'Autre',
+        size: '',
+        buyPrice: productData.unitPrice || 0,
+        sellPrice: 0,
+        stock: productData.quantity || 0,
+        minStock: 5,
+        expiryDate: '',
+        location: ''
+      });
+      
+      // Ouvrir automatiquement le modal d'ajout
+      setIsModalOpen(true);
+    };
+
+    window.addEventListener('openInventoryModal', handleOpenInventoryModal as EventListener);
+    
+    return () => {
+      window.removeEventListener('openInventoryModal', handleOpenInventoryModal as EventListener);
+    };
+  }, []);
+
   // Ensure products is always an array
   const safeProducts = Array.isArray(products) ? products : [];
 

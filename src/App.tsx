@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -17,6 +17,26 @@ import Settings from './components/modules/Settings';
 function AppContent() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Gérer la navigation via hash
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && ['dashboard', 'inventory', 'suppliers', 'clients', 'documents', 'reports', 'settings'].includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+
+    // Vérifier le hash initial
+    handleHashChange();
+
+    // Écouter les changements de hash
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   if (loading) {
     return (

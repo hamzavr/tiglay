@@ -26,6 +26,7 @@ export interface SupplierOrderData {
     code?: string;
     name?: string;
     description?: string;
+    category?: string;
     quantity: number;
     unit?: string;
     unitPrice: number;
@@ -153,6 +154,7 @@ class DocumentWorkflowService {
           code: np.code,
           name: np.name,
           description: np.name, // fallback pour affichage
+          category: np.category,
           quantity: np.quantity,
           unit: 'U',
           unitPrice: np.unitPrice,
@@ -170,8 +172,9 @@ Produits commandés:
 ${combinedItems.map(item => {
   const code = item.code ?? '-';
   const name = item.name ?? item.description ?? '-';
+  const category = item.category ?? 'Autre';
   const unit = item.unit ?? 'U';
-  return `• ${code} - ${name}: ${item.quantity} ${unit} × ${item.unitPrice} DH = ${item.total} DH`;
+  return `• ${code} - ${name} [${category}]: ${item.quantity} ${unit} × ${item.unitPrice} DH = ${item.total} DH`;
 }).join('\n')}
 
 Notes: ${orderData.notes || ''}

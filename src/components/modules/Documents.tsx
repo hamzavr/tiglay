@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Eye, Plus, X, CheckCircle, Circle, Clock, AlertCircle, Filter, Search, Edit, Trash2, Save, Calendar, User, Package, Truck, Receipt, FileCheck } from 'lucide-react';
+import { FileText, Download, Eye, Plus, X, CheckCircle, Circle, Clock, AlertCircle, Filter, Search, Edit, Trash2, Save, Calendar, User, Package, Truck, Receipt, FileCheck, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApi } from '../../hooks/useApi';
 import { documentsAPI, suppliersAPI, clientsAPI } from '../../services/api';
@@ -312,6 +312,10 @@ const Documents: React.FC = () => {
         amount: isAutomaticDocument ? formData.amount : getFormTotal()
       };
 
+      // Debug: afficher les données envoyées
+      console.log('Document data to send:', documentData);
+      console.log('Editing document:', editingDocument);
+
       if (editingDocument) {
         await updateDocument(editingDocument.id, documentData);
       } else {
@@ -321,7 +325,8 @@ const Documents: React.FC = () => {
       closeModal();
       fetchDocuments();
     } catch (error: any) {
-      alert(`Erreur lors de ${editingDocument ? 'la modification' : 'la création'} du document: ${error.message}`);
+      console.error('Error details:', error);
+      alert(`Erreur lors de ${editingDocument ? 'la modification' : 'la création'} du document: ${error.message || error.response?.data?.message || 'Erreur serveur'}`);
     }
   };
 
@@ -901,25 +906,64 @@ const Documents: React.FC = () => {
                               <div className="space-y-2">
                                 {products.map((product, index) => {
                                   const parts = product.replace('• ', '').split(': ');
-                                  const nameCode = parts[0];
+                                  const nameCodeCategory = parts[0];
                                   const details = parts[1] ? parts[1].split(' × ') : [];
                                   const quantityUnit = details[0] ? details[0].split(' ') : [];
                                   const priceTotal = details[1] ? details[1].split(' = ') : [];
                                   
+                                  // Extraire le prix unitaire correctement
+                                  const unitPrice = priceTotal[0] ? priceTotal[0].replace(' DH', '') : '';
+                                  
+                                  // Extraire nom, code et catégorie
+                                  const nameCodeCategoryParts = nameCodeCategory.split(' [');
+                                  const nameCode = nameCodeCategoryParts[0];
+                                  const category = nameCodeCategoryParts[1] ? nameCodeCategoryParts[1].replace(']', '') : '';
+                                  
                                   return (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
                                       <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">Nom/Code</label>
                                         <input
                                           type="text"
                                           value={nameCode}
                                           onChange={(e) => {
-                                            const newProduct = product.replace(nameCode, e.target.value);
+                                            const newNameCode = e.target.value;
+                                            const newProduct = product.replace(nameCode, newNameCode);
                                             const newNotes = notes.replace(product, newProduct);
                                             setFormData({ ...formData, notes: newNotes });
                                           }}
                                           className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Catégorie</label>
+                                        <select
+                                          value={category}
+                                          onChange={(e) => {
+                                            const newCategory = e.target.value;
+                                            const newNameCodeCategory = `${nameCode} [${newCategory}]`;
+                                            const newProduct = product.replace(nameCodeCategory, newNameCodeCategory);
+                                            const newNotes = notes.replace(product, newProduct);
+                                            setFormData({ ...formData, notes: newNotes });
+                                          }}
+                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                        >
+                                          <option value="">Sélectionner</option>
+                                          <option value="Ciment">Ciment</option>
+                                          <option value="Briques">Briques</option>
+                                          <option value="Sable">Sable</option>
+                                          <option value="Gravier">Gravier</option>
+                                          <option value="Fer">Fer</option>
+                                          <option value="Béton">Béton</option>
+                                          <option value="Carrelage">Carrelage</option>
+                                          <option value="Toiture">Toiture</option>
+                                          <option value="Isolation">Isolation</option>
+                                          <option value="Peinture">Peinture</option>
+                                          <option value="Menuiserie">Menuiserie</option>
+                                          <option value="Électricité">Électricité</option>
+                                          <option value="Plomberie">Plomberie</option>
+                                          <option value="Autre">Autre</option>
+                                        </select>
                                       </div>
                                       <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">Quantité</label>
@@ -940,11 +984,11 @@ const Documents: React.FC = () => {
                                         <label className="text-xs text-gray-500 dark:text-gray-400">Prix unitaire</label>
                                         <input
                                           type="number"
-                                          value={priceTotal[0] || ''}
+                                          value={unitPrice}
                                           onChange={(e) => {
                                             const newPrice = e.target.value;
-                                            const newDetails = `${quantityUnit[0] || '1'} ${quantityUnit[1] || 'U'} × ${newPrice} = ${(parseFloat(quantityUnit[0] || '1') * parseFloat(newPrice)).toFixed(2)} DH`;
-                                            const newProduct = product.replace(details[0], newDetails);
+                                            const newDetails = `${quantityUnit[0] || '1'} ${quantityUnit[1] || 'U'} × ${newPrice} DH = ${(parseFloat(quantityUnit[0] || '1') * parseFloat(newPrice)).toFixed(2)} DH`;
+                                            const newProduct = product.replace(details[1], newDetails);
                                             const newNotes = notes.replace(product, newProduct);
                                             setFormData({ ...formData, notes: newNotes });
                                           }}
@@ -956,6 +1000,43 @@ const Documents: React.FC = () => {
                                         <div className="text-sm font-medium text-gray-900 dark:text-white py-1">
                                           {priceTotal[1] || '0 DH'}
                                         </div>
+                                      </div>
+                                      <div className="flex items-end">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Extraire les données du produit
+                                            const productData = {
+                                              name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
+                                              code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
+                                              quantity: parseInt(quantityUnit[0]) || 0,
+                                              unit: quantityUnit[1] || 'U',
+                                              unitPrice: parseFloat(unitPrice) || 0,
+                                              category: category || 'Autre'
+                                            };
+                                            
+                                            // Stocker les données dans localStorage pour la page inventaire
+                                            localStorage.setItem('prefilledProductData', JSON.stringify(productData));
+                                            
+                                            // Fermer le modal et naviguer vers l'inventaire
+                                            setIsModalOpen(false);
+                                            
+                                            // Utiliser window.location pour naviguer vers l'inventaire
+                                            // et ajouter un paramètre pour indiquer qu'il faut ouvrir le modal
+                                            window.location.hash = '#inventory';
+                                            
+                                            // Déclencher un événement personnalisé pour ouvrir le modal
+                                            setTimeout(() => {
+                                              window.dispatchEvent(new CustomEvent('openInventoryModal', { 
+                                                detail: { prefilledData: productData } 
+                                              }));
+                                            }, 100);
+                                          }}
+                                          className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                                        >
+                                          <ArrowRight className="w-3 h-3" />
+                                          Bien, ajouter dans l'inventaire
+                                        </button>
                                       </div>
                                     </div>
                                   );

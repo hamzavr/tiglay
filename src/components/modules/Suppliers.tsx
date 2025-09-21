@@ -30,6 +30,7 @@ interface SupplierFormData {
 interface OrderItem {
   id: string;
   name: string;
+  category?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
@@ -39,9 +40,9 @@ interface OrderItem {
 interface NewProductItem {
   id: string;
   name: string;
-  nameAr: string;
   code: string;
   category: string;
+  unit: string;
   unitPrice: number;
   quantity: number;
   total: number;
@@ -138,6 +139,7 @@ const Suppliers: React.FC = () => {
     const newItem: OrderItem = {
       id: `item-${Date.now()}`,
       name: '',
+      category: '',
       quantity: 1,
       unit: 'U',
       unitPrice: 0,
@@ -153,9 +155,9 @@ const Suppliers: React.FC = () => {
     const newProduct: NewProductItem = {
       id: `new-product-${Date.now()}`,
       name: '',
-      nameAr: '',
       code: '',
       category: '',
+      unit: 'U',
       unitPrice: 0,
       quantity: 1,
       total: 0
@@ -164,6 +166,30 @@ const Suppliers: React.FC = () => {
       ...prev,
       newProducts: [...prev.newProducts, newProduct]
     }));
+  };
+
+  // Générer un code automatique basé sur la catégorie
+  const generateProductCode = (category: string) => {
+    const categoryPrefixes: { [key: string]: string } = {
+      'Ciment': 'CEM',
+      'Briques': 'BRI',
+      'Sable': 'SAB',
+      'Gravier': 'GRA',
+      'Fer': 'FER',
+      'Béton': 'BET',
+      'Carrelage': 'CAR',
+      'Toiture': 'TOI',
+      'Isolation': 'ISO',
+      'Peinture': 'PEI',
+      'Menuiserie': 'MEN',
+      'Électricité': 'ELE',
+      'Plomberie': 'PLO',
+      'Autre': 'AUT'
+    };
+    
+    const prefix = categoryPrefixes[category] || 'PRO';
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `${prefix}-${random}`;
   };
 
   const removeOrderItem = (itemId: string) => {
@@ -203,6 +229,12 @@ const Suppliers: React.FC = () => {
       newProducts: prev.newProducts.map(item => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
+          
+          // Générer automatiquement le code quand la catégorie change
+          if (field === 'category' && value) {
+            updatedItem.code = generateProductCode(value);
+          }
+          
           // Recalculer le total
           if (field === 'quantity' || field === 'unitPrice') {
             updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
@@ -609,6 +641,9 @@ const Suppliers: React.FC = () => {
                                   Nom
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Catégorie
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Quantité
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -637,8 +672,8 @@ const Suppliers: React.FC = () => {
                                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                         placeholder="Nom du produit"
                                       />
-                                      {item.name && (
-                                        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                                      {item.name && getFilteredMaterials(item.name).length > 0 && (
+                                        <div className="absolute z-10 w-full bottom-full mb-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
                                           {getFilteredMaterials(item.name).slice(0, 5).map((material, idx) => (
                                             <div
                                               key={idx}
@@ -651,6 +686,29 @@ const Suppliers: React.FC = () => {
                                         </div>
                                       )}
                                     </div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <select
+                                      value={item.category || ''}
+                                      onChange={(e) => updateOrderItem(item.id, 'category', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                    >
+                                      <option value="">Sélectionner</option>
+                                      <option value="Ciment">Ciment</option>
+                                      <option value="Briques">Briques</option>
+                                      <option value="Sable">Sable</option>
+                                      <option value="Gravier">Gravier</option>
+                                      <option value="Fer">Fer</option>
+                                      <option value="Béton">Béton</option>
+                                      <option value="Carrelage">Carrelage</option>
+                                      <option value="Toiture">Toiture</option>
+                                      <option value="Isolation">Isolation</option>
+                                      <option value="Peinture">Peinture</option>
+                                      <option value="Menuiserie">Menuiserie</option>
+                                      <option value="Électricité">Électricité</option>
+                                      <option value="Plomberie">Plomberie</option>
+                                      <option value="Autre">Autre</option>
+                                    </select>
                                   </td>
                                   <td className="px-3 py-2">
                                     <input
@@ -718,13 +776,13 @@ const Suppliers: React.FC = () => {
                                   Nom *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Nom en arabe
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Code *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Catégorie *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Unité *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Prix unitaire *
@@ -744,23 +802,29 @@ const Suppliers: React.FC = () => {
                               {orderForm.newProducts.map((item, index) => (
                                 <tr key={item.id}>
                                   <td className="px-3 py-2">
-                                    <input
-                                      type="text"
-                                      value={item.name}
-                                      onChange={(e) => updateNewProductItem(item.id, 'name', e.target.value)}
-                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                      placeholder="Nom du produit"
-                                      required
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="text"
-                                      value={item.nameAr}
-                                      onChange={(e) => updateNewProductItem(item.id, 'nameAr', e.target.value)}
-                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                      placeholder="الاسم بالعربية"
-                                    />
+                                    <div className="relative">
+                                      <input
+                                        type="text"
+                                        value={item.name}
+                                        onChange={(e) => updateNewProductItem(item.id, 'name', e.target.value)}
+                                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                        placeholder="Nom du produit"
+                                        required
+                                      />
+                                      {item.name && getFilteredMaterials(item.name).length > 0 && (
+                                        <div className="absolute z-10 w-full bottom-full mb-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
+                                          {getFilteredMaterials(item.name).slice(0, 5).map((material, idx) => (
+                                            <div
+                                              key={idx}
+                                              className="px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
+                                              onClick={() => updateNewProductItem(item.id, 'name', material)}
+                                            >
+                                              {material}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   </td>
                                   <td className="px-3 py-2">
                                     <input
@@ -794,6 +858,20 @@ const Suppliers: React.FC = () => {
                                       <option value="Électricité">Électricité</option>
                                       <option value="Plomberie">Plomberie</option>
                                       <option value="Autre">Autre</option>
+                                    </select>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <select
+                                      value={item.unit}
+                                      onChange={(e) => updateNewProductItem(item.id, 'unit', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      required
+                                    >
+                                      <option value="U">U</option>
+                                      <option value="KG">KG</option>
+                                      <option value="M">M</option>
+                                      <option value="L">L</option>
+                                      <option value="PCS">PCS</option>
                                     </select>
                                   </td>
                                   <td className="px-3 py-2">
