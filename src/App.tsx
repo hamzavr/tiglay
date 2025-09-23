@@ -13,6 +13,7 @@ import Clients from './components/modules/Clients';
 import Documents from './components/modules/Documents';
 import Reports from './components/modules/Reports';
 import Settings from './components/modules/Settings';
+import WaitingList from './components/modules/WaitingList';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -22,7 +23,7 @@ function AppContent() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && ['dashboard', 'inventory', 'suppliers', 'clients', 'documents', 'reports', 'settings'].includes(hash)) {
+      if (hash && ['dashboard', 'inventory', 'suppliers', 'clients', 'documents', 'waiting', 'reports', 'settings'].includes(hash)) {
         setActiveTab(hash);
       }
     };
@@ -65,6 +66,8 @@ function AppContent() {
         return <Clients />;
       case 'documents':
         return <Documents />;
+      case 'waiting':
+        return <WaitingList />;
       case 'reports':
         return <Reports />;
       case 'settings':

@@ -5,6 +5,7 @@ import {
   Users,
   UserCheck,
   FileText,
+  Clock,
   BarChart3,
   Settings
 } from 'lucide-react';
@@ -24,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'suppliers', label: t('suppliers'), icon: Users },
     { id: 'clients', label: t('clients'), icon: UserCheck },
     { id: 'documents', label: t('documents'), icon: FileText },
+    { id: 'waiting', label: 'Liste d’attente', icon: Clock },
     { id: 'reports', label: t('reports'), icon: BarChart3 },
     { id: 'settings', label: t('settings'), icon: Settings }
   ];

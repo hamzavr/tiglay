@@ -160,7 +160,12 @@ router.put('/:id', [auth, authorize('admin', 'manager', 'cashier')], async (req,
     
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        updateData[field] = req.body[field];
+        // Convert empty strings to null for UUID fields
+        if ((field === 'clientId' || field === 'supplierId') && req.body[field] === '') {
+          updateData[field] = null;
+        } else {
+          updateData[field] = req.body[field];
+        }
       }
     });
 
