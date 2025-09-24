@@ -93,7 +93,29 @@ const WaitingList: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">Supprimer</button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          // Pré-remplir les données pour l'inventaire
+                          const prefilled = {
+                            name: item.name,
+                            code: item.code,
+                            category: item.category,
+                            unitPrice: item.unitPrice,
+                            quantity: item.quantity
+                          };
+                          // Mémoriser l'ID à retirer après ajout
+                          localStorage.setItem('waitingListRemoveId', item.id);
+                          localStorage.setItem('prefilledProductData', JSON.stringify(prefilled));
+                          // Naviguer à l'inventaire
+                          window.location.hash = '#inventory';
+                        }}
+                        className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded"
+                      >
+                        Ajouter à l'inventaire
+                      </button>
+                      <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">Supprimer</button>
+                    </div>
                   </td>
                 </tr>
               ))}

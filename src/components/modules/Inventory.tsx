@@ -103,6 +103,9 @@ const Inventory: React.FC = () => {
         
         // Supprimer les données du localStorage après utilisation
         localStorage.removeItem('prefilledProductData');
+
+        // Nettoyer l'URL en gardant la vue actuelle
+        history.replaceState(null, '', '/');
       } catch (error) {
         console.error('Erreur lors du parsing des données pré-remplies:', error);
         localStorage.removeItem('prefilledProductData');
@@ -242,6 +245,21 @@ const Inventory: React.FC = () => {
       
       closeModal();
       fetchProducts({ search: searchTerm });
+
+      // Si on vient de la liste d'attente, retirer l'élément correspondant
+      try {
+        const removeId = localStorage.getItem('waitingListRemoveId');
+        if (removeId) {
+          const raw = localStorage.getItem('waitingListProducts');
+          const list = raw ? JSON.parse(raw) : [];
+          const next = Array.isArray(list) ? list.filter((it: any) => it.id !== removeId) : [];
+          localStorage.setItem('waitingListProducts', JSON.stringify(next));
+          localStorage.removeItem('waitingListRemoveId');
+          alert('Produit ajouté à l\'inventaire et retiré de la liste d\'attente');
+        }
+      } catch (_) {
+        // no-op
+      }
     } catch (error: any) {
       alert(`Error ${editingProduct ? 'updating' : 'creating'} product: ${error.message}`);
     }

@@ -679,7 +679,7 @@ const Documents: React.FC = () => {
       {/* Create/Edit Document Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {editingDocument ? 'Modifier le document' : 'Nouveau document'}
@@ -1112,7 +1112,7 @@ const Documents: React.FC = () => {
                                           })()}
                                         </div>
                                       </div>
-                                      <div className="flex items-end gap-2">
+                                      <div className="flex items-end gap-2 flex-wrap">
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -1141,13 +1141,60 @@ const Documents: React.FC = () => {
                                             onClick={(e) => {
                                               const btn = e.currentTarget as HTMLButtonElement;
                                               const menu = btn.nextElementSibling as HTMLDivElement | null;
-                                              if (menu) menu.classList.toggle('hidden');
+                                              if (!menu) return;
+
+                                              // Prepare for measurement
+                                              menu.style.position = 'fixed';
+                                              menu.style.visibility = 'hidden';
+                                              menu.classList.remove('hidden');
+
+                                              const btnRect = btn.getBoundingClientRect();
+                                              const menuRect = menu.getBoundingClientRect();
+
+                                              const margin = 6;
+                                              const viewportWidth = window.innerWidth;
+                                              const viewportHeight = window.innerHeight;
+
+                                              let left = btnRect.left;
+                                              let top = btnRect.bottom + margin;
+
+                                              // Horizontal clamping
+                                              if (left + menuRect.width > viewportWidth - 8) {
+                                                left = Math.max(8, btnRect.right - menuRect.width);
+                                              }
+                                              if (left < 8) left = 8;
+
+                                              // Flip vertically if not enough space below
+                                              const spaceBelow = viewportHeight - btnRect.bottom;
+                                              const spaceAbove = btnRect.top;
+                                              if (spaceBelow < menuRect.height + margin && spaceAbove > menuRect.height + margin) {
+                                                top = Math.max(8, btnRect.top - menuRect.height - margin);
+                                              }
+
+                                              menu.style.left = `${left}px`;
+                                              menu.style.top = `${top}px`;
+                                              menu.style.visibility = 'visible';
+
+                                              // Close on outside click or scroll/resize
+                                              const close = (ev: Event) => {
+                                                if (ev.type === 'click') {
+                                                  const t = ev.target as Node;
+                                                  if (menu.contains(t) || btn.contains(t as Node)) return;
+                                                }
+                                                menu.classList.add('hidden');
+                                                window.removeEventListener('scroll', close, true);
+                                                window.removeEventListener('resize', close, true);
+                                                window.removeEventListener('click', close, true);
+                                              };
+                                              window.addEventListener('scroll', close, true);
+                                              window.addEventListener('resize', close, true);
+                                              window.addEventListener('click', close, true);
                                             }}
                                             className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors"
                                           >
                                             Quantités incorrectes
                                           </button>
-                                          <div className="absolute z-10 mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow hidden">
+                                          <div className="z-50 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow hidden">
                                             <button
                                               type="button"
                                               onClick={() => {

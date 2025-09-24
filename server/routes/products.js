@@ -80,7 +80,12 @@ router.post('/', [auth, authorize('admin', 'manager')], [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const product = await Product.create(req.body);
+    // Sanitize payload: convert empty dates to null to avoid Invalid date errors
+    const payload = { ...req.body };
+    if (payload.expiryDate === '') payload.expiryDate = null;
+    if (payload.arrivalDate === '') payload.arrivalDate = null;
+
+    const product = await Product.create(payload);
     res.status(201).json(product);
   } catch (error) {
     console.error(error);
@@ -100,7 +105,12 @@ router.put('/:id', [auth, authorize('admin', 'manager')], async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    await product.update(req.body);
+    // Sanitize payload for update as well
+    const payload = { ...req.body };
+    if (payload.expiryDate === '') payload.expiryDate = null;
+    if (payload.arrivalDate === '') payload.arrivalDate = null;
+
+    await product.update(payload);
     res.json(product);
   } catch (error) {
     console.error(error);
