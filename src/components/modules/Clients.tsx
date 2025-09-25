@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Phone, Mail, MapPin, User, X, FileText, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApi } from '../../hooks/useApi';
-import { clientsAPI } from '../../services/api';
+import { clientsAPI, productsAPI, salesAPI } from '../../services/api';
 import documentWorkflowService from '../../services/documentWorkflow';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -26,17 +26,17 @@ interface ClientFormData {
 
 interface SaleItem {
   id: string;
+  name: string;
   code: string;
-  description: string;
   quantity: number;
   unit: string;
+  lastUnitPrice?: number;
   unitPrice: number;
   total: number;
 }
 
 interface SaleFormData {
   deliveryDate: string;
-  paymentTerms: string;
   notes: string;
   items: SaleItem[];
 }
@@ -56,10 +56,11 @@ const Clients: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [saleForm, setSaleForm] = useState<SaleFormData>({
     deliveryDate: '',
-    paymentTerms: 'Comptant',
     notes: '',
     items: []
   });
+  const { data: productList = [], execute: fetchProducts } = useApi(productsAPI.getAll);
+  const { data: salesList = [], execute: fetchSales } = useApi(salesAPI.getAll);
 
   const { data: clients = [], loading: clientsLoading, execute: fetchClients } = useApi(clientsAPI.getAll);
   const { execute: createClient } = useApi(clientsAPI.create);
@@ -101,10 +102,11 @@ const Clients: React.FC = () => {
     setSelectedClient(client);
     setSaleForm({
       deliveryDate: '',
-      paymentTerms: 'Comptant',
       notes: '',
       items: []
     });
+    fetchProducts({});
+    fetchSales({});
     setShowSaleModal(true);
   };
 
@@ -113,7 +115,6 @@ const Clients: React.FC = () => {
     setSelectedClient(null);
     setSaleForm({
       deliveryDate: '',
-      paymentTerms: 'Comptant',
       notes: '',
       items: []
     });
@@ -122,10 +123,11 @@ const Clients: React.FC = () => {
   const addSaleItem = () => {
     const newItem: SaleItem = {
       id: `item-${Date.now()}`,
+      name: '',
       code: '',
-      description: '',
       quantity: 1,
       unit: 'U',
+      lastUnitPrice: undefined,
       unitPrice: 0,
       total: 0
     };
@@ -147,7 +149,49 @@ const Clients: React.FC = () => {
       ...prev,
       items: prev.items.map(item => {
         if (item.id === itemId) {
-          const updatedItem = { ...item, [field]: value };
+          const updatedItem = { ...item, [field]: value } as SaleItem;
+          // Auto-remplissage quand le nom change
+          if (field === 'name') {
+            const list: any[] = Array.isArray(productList) ? (productList as any) : [];
+            const found = list.find((p) => p.name?.toLowerCase() === String(value).toLowerCase());
+            // Chercher dernier prix pour ce client
+            const salesArr: any[] = Array.isArray(salesList) ? (salesList as any) : [];
+            let lastPrice: number | undefined = undefined;
+            let lastCode: string | undefined = undefined;
+            if (selectedClient && salesArr.length > 0) {
+              // Parcourir ventes par ordre récent
+              for (const sale of salesArr) {
+                if (sale.Client?.id === selectedClient.id || sale.clientId === selectedClient.id) {
+                  const items = Array.isArray(sale.SaleItems) ? sale.SaleItems : sale.items || [];
+                  for (const si of items) {
+                    const prod = si.Product || si.product;
+                    const prodName = prod?.name?.toLowerCase();
+                    const prodCode = prod?.code;
+                    if (prodName === String(value).toLowerCase()) {
+                      if (typeof si.price === 'number') lastPrice = si.price;
+                      lastCode = prodCode;
+                      break;
+                    }
+                  }
+                  if (lastPrice !== undefined) break;
+                }
+              }
+            }
+            if (found) {
+              updatedItem.code = lastCode || found.code || updatedItem.code;
+              updatedItem.lastUnitPrice = lastPrice !== undefined
+                ? lastPrice
+                : (typeof found.sellPrice === 'number' ? found.sellPrice : parseFloat(found.sellPrice) || undefined);
+            } else {
+              updatedItem.lastUnitPrice = undefined;
+              const nameStr = String(value || '').trim();
+              if (nameStr) {
+                const prefix = nameStr.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0,3) || 'PRD';
+                const suffix = Math.floor(100 + Math.random()*900).toString();
+                updatedItem.code = `${prefix}-${suffix}`;
+              }
+            }
+          }
           // Recalculer le total
           if (field === 'quantity' || field === 'unitPrice') {
             updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
@@ -215,7 +259,6 @@ const Clients: React.FC = () => {
         total: getSaleTotal(),
         items: saleForm.items,
         deliveryDate: saleForm.deliveryDate,
-        paymentTerms: saleForm.paymentTerms,
         notes: saleForm.notes
       };
 
@@ -448,32 +491,18 @@ const Clients: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date de livraison souhaitée *
+                    Date de livraison souhaitée
                   </label>
                   <input
                     type="date"
                     value={saleForm.deliveryDate}
                     onChange={(e) => setSaleForm({ ...saleForm, deliveryDate: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
+                    
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Conditions de paiement
-                  </label>
-                  <select
-                    value={saleForm.paymentTerms}
-                    onChange={(e) => setSaleForm({ ...saleForm, paymentTerms: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  >
-                    <option value="Comptant">Comptant</option>
-                    <option value="30 jours">30 jours</option>
-                    <option value="60 jours">60 jours</option>
-                    <option value="90 jours">90 jours</option>
-                  </select>
-                </div>
+                
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -509,6 +538,9 @@ const Clients: React.FC = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Nom
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Code
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -519,6 +551,9 @@ const Clients: React.FC = () => {
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Unité
+                          </th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Dernier prix Unitaire payé
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Prix Unitaire
@@ -536,6 +571,16 @@ const Clients: React.FC = () => {
                           <tr key={item.id}>
                             <td className="px-3 py-2">
                               <input
+                                list="client-sale-product-suggestions"
+                                type="text"
+                                value={(item as any).name || ''}
+                                onChange={(e) => updateSaleItem(item.id, 'name', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                placeholder="Nom du produit"
+                              />
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
                                 type="text"
                                 value={item.code}
                                 onChange={(e) => updateSaleItem(item.id, 'code', e.target.value)}
@@ -543,15 +588,7 @@ const Clients: React.FC = () => {
                                 placeholder="Code produit"
                               />
                             </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="text"
-                                value={item.description}
-                                onChange={(e) => updateSaleItem(item.id, 'description', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                placeholder="Description du produit"
-                              />
-                            </td>
+                            
                             <td className="px-3 py-2">
                               <input
                                 type="number"
@@ -573,6 +610,15 @@ const Clients: React.FC = () => {
                                 <option value="L">L</option>
                                 <option value="PCS">PCS</option>
                               </select>
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="text"
+                                value={typeof (item as any).lastUnitPrice === 'number' ? `${(item as any).lastUnitPrice}` : ''}
+                                readOnly
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-gray-100 dark:bg-gray-500 text-gray-700 dark:text-gray-200"
+                                placeholder="—"
+                              />
                             </td>
                             <td className="px-3 py-2">
                               <input
@@ -602,6 +648,11 @@ const Clients: React.FC = () => {
                         ))}
                       </tbody>
                     </table>
+                    <datalist id="client-sale-product-suggestions">
+                      {(Array.isArray(productList) ? (productList as any) : []).map((p: any) => (
+                        <option key={p.id} value={p.name} />
+                      ))}
+                    </datalist>
                   </div>
                 )}
               </div>
@@ -639,7 +690,7 @@ const Clients: React.FC = () => {
               <Button 
                 variant="primary" 
                 onClick={handleCreateSale}
-                disabled={saleForm.items.length === 0 || !saleForm.deliveryDate}
+                disabled={saleForm.items.length === 0}
               >
                 Créer Vente
               </Button>
