@@ -57,6 +57,43 @@ const Clients: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
+  // Fonction pour récupérer le dernier prix payé pour un produit par un client
+  const getLastUnitPrice = (productId: string | number, clientId: string | number): number | null => {
+    if (!clientId || !productId) return null;
+    
+    // Parcourir l'historique des ventes
+    if (Array.isArray(salesList)) {
+      // Créer un tableau pour stocker les prix trouvés avec leurs dates
+      const prices: { price: number; date: string }[] = [];
+      
+      salesList.forEach(sale => {
+        // Vérifier si c'est une vente pour ce client
+        const saleClientId = sale.clientId || (sale.Client && sale.Client.id);
+        if (saleClientId !== clientId) return;
+        
+        // Parcourir les articles de la vente
+        const items = sale.SaleItems || sale.items || [];
+        items.forEach((item: any) => {
+          const itemProductId = item.productId || (item.Product && item.Product.id);
+          if (itemProductId && String(itemProductId) === String(productId) && item.price) {
+            prices.push({
+              price: parseFloat(item.price),
+              date: sale.createdAt || sale.date || ''
+            });
+          }
+        });
+      });
+      
+      // Trier par date (du plus récent au plus ancien)
+      prices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      // Retourner le prix le plus récent
+      return prices.length > 0 ? prices[0].price : null;
+    }
+    
+    return null;
+  };
+
   const [saleForm, setSaleForm] = useState<SaleFormData>({
     deliveryDate: '',
     notes: '',
@@ -159,22 +196,44 @@ const Clients: React.FC = () => {
 
   // Helper to fetch last unit price paid by selectedClient for a product
   const getLastPaidPrice = (productId: string): number | undefined => {
-    if (!selectedClient) return undefined;
+    if (!selectedClient || !productId) return undefined;
 
-    const salesArr: any[] = Array.isArray(salesList) ? (salesList as any) : [];
-    for (const sale of salesArr) {
-      // Only consider sales of the current client
-      if (sale.Client?.id !== selectedClient.id && sale.clientId !== selectedClient.id) continue;
+    const salesArr: any[] = Array.isArray(salesList) ? [...salesList] : [];
+    
+    // Trier les ventes par date (les plus récentes en premier)
+    const sortedSales = salesArr.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
 
-      const items = Array.isArray(sale.SaleItems) ? sale.SaleItems : sale.items || [];
-      for (const si of items) {
-        const prod = si.Product || si.product || {};
-        const pid = si.productId ?? prod.id;
+    // Parcourir les ventes triées
+    for (const sale of sortedSales) {
+      // Vérifier si c'est une vente pour ce client
+      const saleClientId = sale.Client?.id || sale.clientId;
+      if (saleClientId !== selectedClient.id) continue;
+
+      // Récupérer les articles de la vente
+      const items = Array.isArray(sale.SaleItems) ? sale.SaleItems : 
+                   Array.isArray(sale.items) ? sale.items : [];
+
+      // Chercher le produit dans les articles
+      for (const item of items) {
+        const prod = item.Product || item.product || {};
+        const pid = item.productId || prod.id;
+        
+        // Vérifier si c'est le bon produit et si on a un prix valide
         if (pid && String(pid) === String(productId)) {
-          if (typeof si.price === 'number') return si.price;
+          const price = parseFloat(item.price || prod.price);
+          if (!isNaN(price)) {
+            console.log(`Prix trouvé pour le produit ${productId}:`, price, 'dans la vente du', sale.createdAt);
+            return price;
+          }
         }
       }
     }
+    
+    console.log(`Aucun prix trouvé pour le produit ${productId} dans l'historique du client`);
     return undefined;
   };
 
@@ -771,11 +830,11 @@ const Clients: React.FC = () => {
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Quantité
                           </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Dernier prix Unitaire payé
+<th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Prix Unitaire
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Prix Unitaire
+                            Dernier prix payé
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Total
@@ -789,15 +848,22 @@ const Clients: React.FC = () => {
                         {saleForm.items.map((item, index) => (
                           <tr key={item.id}>
                             <td className="px-3 py-2">
-                              <input
-                                list="client-sale-product-suggestions"
-                                type="text"
-                                value={(item as any).name || ''}
-                                onChange={(e) => updateSaleItem(item.id, 'name', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                placeholder="Nom du produit"
-                                autoComplete="off"
-                              />
+                              <div className="flex flex-col">
+                                <input
+                                  list="client-sale-product-suggestions"
+                                  type="text"
+                                  value={(item as any).name || ''}
+                                  onChange={(e) => updateSaleItem(item.id, 'name', e.target.value)}
+                                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                  placeholder="Nom du produit"
+                                  autoComplete="off"
+                                />
+                                {item.lastUnitPrice !== undefined && (
+                                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
+                                    Dernier prix payé: {item.lastUnitPrice.toFixed(2)} DH
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 py-2">
                               <input
@@ -831,18 +897,7 @@ const Clients: React.FC = () => {
                                 min="1"
                               />
                             </td>
-                            <td className="px-3 py-2">
-                              <input
-                                type="number"
-                                value={item.lastUnitPrice !== undefined ? item.lastUnitPrice : ''}
-                                readOnly
-                                step="0.01"
-                                min="0"
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-gray-100 dark:bg-gray-500 text-gray-700 dark:text-gray-200"
-                                placeholder="—"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
+<td className="px-3 py-2">
                               <input
                                 type="number"
                                 value={item.unitPrice}
@@ -851,6 +906,15 @@ const Clients: React.FC = () => {
                                 min="0"
                                 step="0.01"
                               />
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              {item.lastUnitPrice ? (
+                                <div className="text-blue-600 dark:text-blue-400 font-medium">
+                                  {item.lastUnitPrice.toFixed(2)} DH
+                                </div>
+                              ) : (
+                                <div className="text-gray-400 italic">-</div>
+                              )}
                             </td>
                             <td className="px-3 py-2">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
