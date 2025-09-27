@@ -28,6 +28,7 @@ interface SaleItem {
   id: string;
   name: string;
   code: string;
+  productId?: string;
   quantity: number;
   unit: string;
   lastUnitPrice?: number;
@@ -54,6 +55,8 @@ const Clients: React.FC = () => {
   });
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [saleForm, setSaleForm] = useState<SaleFormData>({
     deliveryDate: '',
     notes: '',
@@ -61,6 +64,11 @@ const Clients: React.FC = () => {
   });
   const { data: productList = [], execute: fetchProducts } = useApi(productsAPI.getAll);
   const { data: salesList = [], execute: fetchSales } = useApi(salesAPI.getAll);
+  const { execute: createSale } = useApi(salesAPI.create);
+  const [openSuggestFor, setOpenSuggestFor] = useState<string | null>(null);
+  const [suggestionPosition, setSuggestionPosition] = useState<{top: number, left: number, width: number}>({top: 0, left: 0, width: 0});
+
+  // (Datalist natif utilisé pour les suggestions du champ Nom)
 
   const { data: clients = [], loading: clientsLoading, execute: fetchClients } = useApi(clientsAPI.getAll);
   const { execute: createClient } = useApi(clientsAPI.create);
@@ -110,6 +118,12 @@ const Clients: React.FC = () => {
     setShowSaleModal(true);
   };
 
+  const openHistoryModal = (client: Client) => {
+    setHistoryClient(client);
+    fetchSales({});
+    setShowHistoryModal(true);
+  };
+
   const closeSaleModal = () => {
     setShowSaleModal(false);
     setSelectedClient(null);
@@ -120,11 +134,17 @@ const Clients: React.FC = () => {
     });
   };
 
+  const closeHistoryModal = () => {
+    setShowHistoryModal(false);
+    setHistoryClient(null);
+  };
+
   const addSaleItem = () => {
     const newItem: SaleItem = {
       id: `item-${Date.now()}`,
       name: '',
       code: '',
+      productId: undefined,
       quantity: 1,
       unit: 'U',
       lastUnitPrice: undefined,
@@ -179,17 +199,49 @@ const Clients: React.FC = () => {
             }
             if (found) {
               updatedItem.code = lastCode || found.code || updatedItem.code;
-              updatedItem.lastUnitPrice = lastPrice !== undefined
-                ? lastPrice
-                : (typeof found.sellPrice === 'number' ? found.sellPrice : parseFloat(found.sellPrice) || undefined);
+              updatedItem.productId = found.id;
+              updatedItem.lastUnitPrice = lastPrice !== undefined ? lastPrice : undefined;
             } else {
               updatedItem.lastUnitPrice = undefined;
+              updatedItem.productId = undefined;
               const nameStr = String(value || '').trim();
               if (nameStr) {
                 const prefix = nameStr.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0,3) || 'PRD';
                 const suffix = Math.floor(100 + Math.random()*900).toString();
                 updatedItem.code = `${prefix}-${suffix}`;
               }
+            }
+          }
+          // Auto-remplissage quand le code change
+          if (field === 'code') {
+            const list: any[] = Array.isArray(productList) ? (productList as any) : [];
+            const found = list.find((p) => String(p.code || '').toLowerCase() === String(value || '').toLowerCase());
+            // Chercher dernier prix pour ce client
+            const salesArr: any[] = Array.isArray(salesList) ? (salesList as any) : [];
+            let lastPrice: number | undefined = undefined;
+            if (selectedClient && salesArr.length > 0 && found) {
+              for (const sale of salesArr) {
+                if (sale.Client?.id === selectedClient.id || sale.clientId === selectedClient.id) {
+                  const items = Array.isArray(sale.SaleItems) ? sale.SaleItems : sale.items || [];
+                  for (const si of items) {
+                    const prod = si.Product || si.product;
+                    const prodCode = prod?.code;
+                    if (String(prodCode || '').toLowerCase() === String(value || '').toLowerCase()) {
+                      if (typeof si.price === 'number') lastPrice = si.price;
+                      break;
+                    }
+                  }
+                  if (lastPrice !== undefined) break;
+                }
+              }
+            }
+            if (found) {
+              updatedItem.name = found.name || updatedItem.name;
+              updatedItem.productId = found.id;
+              updatedItem.lastUnitPrice = lastPrice !== undefined ? lastPrice : undefined;
+            } else {
+              updatedItem.productId = undefined;
+              updatedItem.lastUnitPrice = undefined;
             }
           }
           // Recalculer le total
@@ -246,21 +298,41 @@ const Clients: React.FC = () => {
       return;
     }
 
-    if (!saleForm.deliveryDate) {
-      alert('Veuillez spécifier une date de livraison');
-      return;
-    }
-
     try {
       // Créer la vente avec tous les détails
+      // Transformer les items pour l'API backend (id=productId, price, quantity)
+      const catalog: any[] = Array.isArray(productList) ? (productList as any) : [];
+      const payloadItems = saleForm.items.map((it) => {
+        const byCode = catalog.find((p) => String(p.code || '').toLowerCase() === String(it.code || '').toLowerCase());
+        const byName = catalog.find((p) => String(p.name || '').toLowerCase() === String((it as any).name || '').toLowerCase());
+        const product = byCode || byName;
+        return {
+          id: it.productId || product?.id,
+          quantity: it.quantity,
+          price: it.unitPrice,
+        };
+      });
+
+      // Valider que tous les produits existent pour créer la vente côté backend
+      if (payloadItems.some((pi) => !pi.id)) {
+        alert('Un ou plusieurs produits sélectionnés n\'existent pas dans le catalogue. Veuillez choisir dans les suggestions.');
+        return;
+      }
+
       const saleData = {
         id: `SALE-${Date.now()}`,
         clientId: selectedClient.id,
         total: getSaleTotal(),
-        items: saleForm.items,
+        items: payloadItems,
         deliveryDate: saleForm.deliveryDate,
         notes: saleForm.notes
       };
+
+      // Persister la vente côté backend
+      await createSale(saleData as any);
+
+      // Rafraîchir la liste des ventes pour que l'historique se mette à jour
+      await fetchSales({});
 
       // Créer automatiquement tous les documents client
       const documents = await documentWorkflowService.createCustomerSaleDocuments(saleData);
@@ -348,6 +420,8 @@ const Clients: React.FC = () => {
                     {client.email}
                   </div>
                 )}
+
+      
                 <div className="flex items-start text-sm text-gray-600 dark:text-gray-400">
                   <MapPin className={`w-4 h-4 ${isRTL ? 'ml-2' : 'mr-2'} text-gray-400 mt-0.5 flex-shrink-0`} />
                   <span>{client.address || 'Aucune adresse'}</span>
@@ -365,7 +439,7 @@ const Clients: React.FC = () => {
 
               {/* Actions */}
               <div className="flex space-x-2">
-                <Button variant="secondary" size="sm" className="flex-1">
+                <Button variant="secondary" size="sm" className="flex-1" onClick={() => openHistoryModal(client)}>
                   Historique
                 </Button>
                 <Button 
@@ -470,6 +544,97 @@ const Clients: React.FC = () => {
         </div>
       )}
 
+      {/* Client Sales History Modal */}
+      {showHistoryModal && historyClient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Historique des ventes - {historyClient.name}
+              </h3>
+              <button
+                onClick={closeHistoryModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {(() => {
+              const allSales: any[] = Array.isArray(salesList) ? (salesList as any) : [];
+              const clientId = historyClient.id;
+              const clientSales = allSales.filter((s) => s.Client?.id === clientId || s.clientId === clientId);
+              if (clientSales.length === 0) {
+                return (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                    Aucun historique trouvé pour ce client.
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  {clientSales.map((sale) => {
+                    const items: any[] = Array.isArray(sale.SaleItems) ? sale.SaleItems : (Array.isArray(sale.items) ? sale.items : []);
+                    const dateStr = sale.createdAt ? new Date(sale.createdAt).toLocaleString('fr-FR') : (sale.date ? new Date(sale.date).toLocaleString('fr-FR') : '—');
+                    const total = typeof sale.total === 'number' ? sale.total : (Number(sale.total) || 0);
+                    return (
+                      <div key={sale.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap justify-between items-center">
+                          <div className="text-sm text-gray-700 dark:text-gray-300">Vente: <span className="font-medium">{sale.id || '—'}</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">Date: <span className="font-medium">{dateStr}</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">Total: <span className="font-semibold">{total.toLocaleString()} DH</span></div>
+                        </div>
+                        <div className="overflow-visible">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-300">
+                                <th className="px-3 py-2 text-left">Nom</th>
+                                <th className="px-3 py-2 text-left">Code</th>
+                                <th className="px-3 py-2 text-left">Unité</th>
+                                <th className="px-3 py-2 text-right">Quantité</th>
+                                <th className="px-3 py-2 text-right">Prix U.</th>
+                                <th className="px-3 py-2 text-right">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                              {items.map((si, idx) => {
+                                const prod = si.Product || si.product || {};
+                                const name = prod.name || si.name || '—';
+                                const code = prod.code || si.code || '—';
+                                const unit = si.unit || prod.unit || '—';
+                                const qty = typeof si.quantity === 'number' ? si.quantity : (Number(si.quantity) || 0);
+                                const price = typeof si.price === 'number' ? si.price : (Number(si.price) || 0);
+                                const rowTotal = typeof si.total === 'number' ? si.total : (qty * price);
+                                return (
+                                  <tr key={idx}>
+                                    <td className="px-3 py-2">{name}</td>
+                                    <td className="px-3 py-2">{code}</td>
+                                    <td className="px-3 py-2">{unit}</td>
+                                    <td className="px-3 py-2 text-right">{qty}</td>
+                                    <td className="px-3 py-2 text-right">{price.toLocaleString()} DH</td>
+                                    <td className="px-3 py-2 text-right">{rowTotal.toLocaleString()} DH</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div className="flex justify-end mt-6">
+              <Button variant="secondary" onClick={closeHistoryModal}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* New Sale Modal */}
       {showSaleModal && selectedClient && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -515,7 +680,7 @@ const Clients: React.FC = () => {
               </div>
 
               {/* Products Table */}
-              <div>
+              <div className="relative z-40">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-lg font-medium text-gray-900 dark:text-white">Produits vendus</h4>
                   <Button
@@ -544,13 +709,10 @@ const Clients: React.FC = () => {
                             Code
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Description
+                            Unité
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Quantité
-                          </th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Unité
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Dernier prix Unitaire payé
@@ -577,6 +739,7 @@ const Clients: React.FC = () => {
                                 onChange={(e) => updateSaleItem(item.id, 'name', e.target.value)}
                                 className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                 placeholder="Nom du produit"
+                                autoComplete="off"
                               />
                             </td>
                             <td className="px-3 py-2">
@@ -590,15 +753,6 @@ const Clients: React.FC = () => {
                             </td>
                             
                             <td className="px-3 py-2">
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => updateSaleItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
-                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                min="1"
-                              />
-                            </td>
-                            <td className="px-3 py-2">
                               <select
                                 value={item.unit}
                                 onChange={(e) => updateSaleItem(item.id, 'unit', e.target.value)}
@@ -610,6 +764,15 @@ const Clients: React.FC = () => {
                                 <option value="L">L</option>
                                 <option value="PCS">PCS</option>
                               </select>
+                            </td>
+                            <td className="px-3 py-2">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateSaleItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                min="1"
+                              />
                             </td>
                             <td className="px-3 py-2">
                               <input
@@ -660,14 +823,14 @@ const Clients: React.FC = () => {
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notes et conditions (optionnel)
+                  Notes (optionnel)
                 </label>
                 <textarea
                   value={saleForm.notes}
                   onChange={(e) => setSaleForm({ ...saleForm, notes: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   rows={4}
-                  placeholder="Spécifications techniques, conditions de livraison, notes importantes..."
+                  placeholder="Notes importantes..."
                 />
               </div>
 
