@@ -40,23 +40,23 @@ router.get('/', auth, async (req, res) => {
 // Create sale
 router.post('/', auth, async (req, res) => {
   try {
-    const { items, clientId, paymentMethod, total } = req.body;
-    
-    console.log('Sale creation request:', { items, clientId, paymentMethod, total });
+    const { items, clientId, total } = req.body;
+        
+    console.log('Sale creation request:', { items, clientId, total });
 
     // Validate required fields
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'Items are required' });
     }
-    
     if (!total || total <= 0) {
       return res.status(400).json({ message: 'Total must be greater than 0' });
     }
 
+    
     // Create sale
     const sale = await Sale.create({
       total: parseFloat(total),
-      paymentMethod,
+      paymentMethod: 'cash',
       clientId: clientId || null,
       userId: req.user.id
     });
@@ -71,7 +71,6 @@ router.post('/', auth, async (req, res) => {
         total: item.quantity * item.price
       });
 
-      // Update product stock
       const product = await Product.findByPk(item.id);
       await product.update({
         stock: product.stock - item.quantity,

@@ -106,15 +106,15 @@ const Clients: React.FC = () => {
     setFormData({ name: '', phone: '', email: '', address: '' });
   };
 
-  const openSaleModal = (client: Client) => {
+  const openSaleModal = async (client: Client) => {
     setSelectedClient(client);
     setSaleForm({
       deliveryDate: '',
       notes: '',
       items: []
     });
-    fetchProducts({});
-    fetchSales({});
+    // Charger produits et historique AVANT d'ouvrir la modale pour disposer des prix
+    await Promise.all([fetchProducts({}), fetchSales({})]);
     setShowSaleModal(true);
   };
 
@@ -155,6 +155,27 @@ const Clients: React.FC = () => {
       ...prev,
       items: [...prev.items, newItem]
     }));
+  };
+
+  // Helper to fetch last unit price paid by selectedClient for a product
+  const getLastPaidPrice = (productId: string): number | undefined => {
+    if (!selectedClient) return undefined;
+
+    const salesArr: any[] = Array.isArray(salesList) ? (salesList as any) : [];
+    for (const sale of salesArr) {
+      // Only consider sales of the current client
+      if (sale.Client?.id !== selectedClient.id && sale.clientId !== selectedClient.id) continue;
+
+      const items = Array.isArray(sale.SaleItems) ? sale.SaleItems : sale.items || [];
+      for (const si of items) {
+        const prod = si.Product || si.product || {};
+        const pid = si.productId ?? prod.id;
+        if (pid && String(pid) === String(productId)) {
+          if (typeof si.price === 'number') return si.price;
+        }
+      }
+    }
+    return undefined;
   };
 
   const removeSaleItem = (itemId: string) => {
@@ -200,7 +221,11 @@ const Clients: React.FC = () => {
             if (found) {
               updatedItem.code = lastCode || found.code || updatedItem.code;
               updatedItem.productId = found.id;
-              updatedItem.lastUnitPrice = lastPrice !== undefined ? lastPrice : undefined;
+              const priceFromHistory = getLastPaidPrice(found.id);
+              updatedItem.lastUnitPrice = priceFromHistory !== undefined ? priceFromHistory : (lastPrice !== undefined ? lastPrice : undefined);
+              if (updatedItem.unitPrice === 0 && updatedItem.lastUnitPrice !== undefined) {
+                updatedItem.unitPrice = updatedItem.lastUnitPrice;
+              }
             } else {
               updatedItem.lastUnitPrice = undefined;
               updatedItem.productId = undefined;
@@ -238,7 +263,11 @@ const Clients: React.FC = () => {
             if (found) {
               updatedItem.name = found.name || updatedItem.name;
               updatedItem.productId = found.id;
-              updatedItem.lastUnitPrice = lastPrice !== undefined ? lastPrice : undefined;
+              const priceFromHistory = getLastPaidPrice(found.id);
+              updatedItem.lastUnitPrice = priceFromHistory !== undefined ? priceFromHistory : (lastPrice !== undefined ? lastPrice : undefined);
+              if (updatedItem.unitPrice === 0 && updatedItem.lastUnitPrice !== undefined) {
+                updatedItem.unitPrice = updatedItem.lastUnitPrice;
+              }
             } else {
               updatedItem.productId = undefined;
               updatedItem.lastUnitPrice = undefined;
@@ -254,6 +283,24 @@ const Clients: React.FC = () => {
       })
     }));
   };
+
+  // Mettre à jour les lastUnitPrice lorsque les ventes sont chargées
+  useEffect(() => {
+    if (!showSaleModal || !selectedClient) return;
+    setSaleForm(prev => ({
+      ...prev,
+      items: prev.items.map(it => {
+        if (it.productId) {
+          const lp = getLastPaidPrice(it.productId as any);
+          if (lp !== undefined && it.lastUnitPrice !== lp) {
+            const newUnit = it.unitPrice === 0 ? lp : it.unitPrice;
+            return { ...it, lastUnitPrice: lp, unitPrice: newUnit, total: it.quantity * newUnit } as SaleItem;
+          }
+        }
+        return it;
+      })
+    }));
+  }, [salesList]);
 
   const getSaleTotal = () => {
     return saleForm.items.reduce((sum, item) => sum + item.total, 0);
@@ -319,30 +366,40 @@ const Clients: React.FC = () => {
         return;
       }
 
-      const saleData = {
-        id: `SALE-${Date.now()}`,
+      const salePayload = {
         clientId: selectedClient.id,
         total: getSaleTotal(),
         items: payloadItems,
         deliveryDate: saleForm.deliveryDate,
-        notes: saleForm.notes
+        notes: saleForm.notes,
+        paymentMethod: 'cash'
       };
 
-      // Persister la vente côté backend
-      await createSale(saleData as any);
+      // Persister la vente côté backend et récupérer la vente complétée
+      const response: any = await createSale(salePayload);
+      const savedSale = response?.sale || null;
 
       // Rafraîchir la liste des ventes pour que l'historique se mette à jour
       await fetchSales({});
 
-      // Créer automatiquement tous les documents client
-      const documents = await documentWorkflowService.createCustomerSaleDocuments(saleData);
+      // Créer automatiquement tous les documents client (si service disponible)
+      let generatedCount = 0;
+      if (savedSale) {
+        try {
+          const docs = await documentWorkflowService.createCustomerSaleDocuments(savedSale);
+          generatedCount = Array.isArray(docs) ? docs.length : 0;
+        } catch (err) {
+          console.warn('Document workflow service error:', err);
+        }
+      }
 
-      alert(`Vente créée avec succès ! ${documents.length} documents générés automatiquement.`);
+      alert(`Vente créée avec succès ! ${generatedCount} documents générés automatiquement.`);
       closeSaleModal();
       
     } catch (error) {
       console.error('Erreur lors de la création de la vente:', error);
-      alert('Erreur lors de la création de la vente');
+      const msg = (error as any)?.response?.data?.message || (error as any)?.message || 'Erreur inconnue';
+      alert(`Erreur lors de la création de la vente: ${msg}`);
     }
   };
 
@@ -776,9 +833,11 @@ const Clients: React.FC = () => {
                             </td>
                             <td className="px-3 py-2">
                               <input
-                                type="text"
-                                value={typeof (item as any).lastUnitPrice === 'number' ? `${(item as any).lastUnitPrice}` : ''}
+                                type="number"
+                                value={item.lastUnitPrice !== undefined ? item.lastUnitPrice : ''}
                                 readOnly
+                                step="0.01"
+                                min="0"
                                 className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-gray-100 dark:bg-gray-500 text-gray-700 dark:text-gray-200"
                                 placeholder="—"
                               />
