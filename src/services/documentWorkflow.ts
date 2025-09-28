@@ -68,7 +68,8 @@ class DocumentWorkflowService {
 
   /**
    * Crée automatiquement les documents du workflow après une vente client
-   * Génère: Bon de commande client, Bon de livraison, Facture
+   * Génère: Bon de commande client, Bon de livraison
+   * Note: La facture n'est plus générée automatiquement, elle doit être créée manuellement via le bouton "Créer Facture"
    */
   async createCustomerSaleDocuments(saleData: SaleData) {
     try {
@@ -83,6 +84,7 @@ class DocumentWorkflowService {
         amount: saleData.total,
         clientId: saleData.clientId,
         notes: `Commande automatique générée depuis la vente ${saleData.id}`,
+        items: saleData.items,
         linkedDocuments: []
       });
       documents.push(customerOrder);
@@ -96,43 +98,30 @@ class DocumentWorkflowService {
         amount: saleData.total,
         clientId: saleData.clientId,
         notes: `Bon de livraison automatique pour la vente ${saleData.id}`,
+        items: saleData.items,
         linkedDocuments: [customerOrder.id || customerOrder.data?.id]
       });
       documents.push(deliveryNote);
 
-      // 3. Facture (Étape 6)
-      const invoice = await documentsAPI.create({
-        type: 'invoice',
-        number: this.generateDocumentNumber('invoice'),
-        workflowStep: 6,
-        status: 'sent',
-        amount: saleData.total,
-        clientId: saleData.clientId,
-        notes: `Facture automatique pour la vente ${saleData.id}`,
-        linkedDocuments: [
-          customerOrder.id || customerOrder.data?.id, 
-          deliveryNote.id || deliveryNote.data?.id
-        ]
-      });
-      documents.push(invoice);
+      // 3. Facture (Étape 6) - SUPPRIMÉ: La facture n'est plus générée automatiquement
+      // La facture doit maintenant être créée manuellement via le bouton "Créer Facture" dans l'interface
 
-      // Mettre à jour les documents liés
+      // Mettre à jour les documents liés (sans facture)
       const customerOrderId = customerOrder.id || customerOrder.data?.id;
       const deliveryNoteId = deliveryNote.id || deliveryNote.data?.id;
-      const invoiceId = invoice.id || invoice.data?.id;
 
-      if (customerOrderId && deliveryNoteId && invoiceId) {
+      if (customerOrderId && deliveryNoteId) {
         await Promise.all([
           documentsAPI.update(customerOrderId, { 
-            linkedDocuments: [deliveryNoteId, invoiceId] 
+            linkedDocuments: [deliveryNoteId] 
           }),
           documentsAPI.update(deliveryNoteId, { 
-            linkedDocuments: [customerOrderId, invoiceId] 
+            linkedDocuments: [customerOrderId] 
           })
         ]);
       }
 
-      console.log('Documents client créés automatiquement:', documents);
+      console.log('Documents client créés automatiquement (sans facture):', documents);
       return documents;
 
     } catch (error) {

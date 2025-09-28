@@ -38,6 +38,7 @@ interface DocumentFormData {
   amount: number;
   status: string;
   notes: string;
+  deliveryDate?: string;
   items: Array<{
     id: string;
     code: string;
@@ -92,6 +93,18 @@ const Documents: React.FC = () => {
     fetchClients();
     fetchSuppliers();
   }, []);
+
+  // Debug: Log documents when they are loaded
+  useEffect(() => {
+    if (documents) {
+      console.log('Documents loaded:', documents);
+      const customerOrders = documents.filter(doc => doc.type === 'customer_sales_order');
+      console.log('Customer orders:', customerOrders);
+      customerOrders.forEach(order => {
+        console.log(`Order ${order.number} items:`, order.items);
+      });
+    }
+  }, [documents]);
 
   const documentTypes = {
     all: 'Tous les documents',
@@ -210,6 +223,8 @@ const Documents: React.FC = () => {
   };
 
   const openEditModal = (document: Document) => {
+    console.log('Opening edit modal for document:', document);
+    console.log('Document items for editing:', document.items);
     setEditingDocument(document);
     setFormData({
       type: document.type,
@@ -224,6 +239,8 @@ const Documents: React.FC = () => {
   };
 
   const openViewModal = (document: Document) => {
+    console.log('Opening view modal for document:', document);
+    console.log('Document items:', document.items);
     setViewingDocument(document);
     setIsViewModalOpen(true);
   };
@@ -429,6 +446,27 @@ const Documents: React.FC = () => {
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
       alert('Erreur lors de la génération du PDF');
+    }
+  };
+
+  const handleCreateInvoice = async (customerOrder: Document) => {
+    try {
+      // Créer une facture basée sur le bon de commande client
+      const invoiceData = {
+        type: 'invoice',
+        clientId: customerOrder.Client?.id,
+        amount: customerOrder.amount,
+        status: 'draft',
+        notes: `Facture générée à partir du bon de commande ${customerOrder.number}`,
+        items: customerOrder.items || []
+      };
+
+      await createDocument(invoiceData);
+      alert('Facture créée avec succès');
+      fetchDocuments(); // Rafraîchir la liste des documents
+    } catch (error: any) {
+      console.error('Erreur lors de la création de la facture:', error);
+      alert(`Erreur lors de la création de la facture: ${error.message || 'Erreur serveur'}`);
     }
   };
 
@@ -749,8 +787,8 @@ const Documents: React.FC = () => {
                 </div>
               </div>
 
-              {/* Client/Supplier Selection - Hidden for supplier_purchase_order */}
-              {formData.type !== 'supplier_purchase_order' && (
+              {/* Client/Supplier Selection - Hidden for supplier_purchase_order and customer_sales_order */}
+              {formData.type !== 'supplier_purchase_order' && formData.type !== 'customer_sales_order' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -784,6 +822,114 @@ const Documents: React.FC = () => {
                         <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                       ))}
                     </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Order Details for editing customer_sales_order */}
+              {editingDocument && formData.type === 'customer_sales_order' && (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande client</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Total de la commande
+                        </label>
+                        <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                          {parseAmount(formData.amount).toLocaleString()} DH
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {formData.items && formData.items.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Produits vendus
+                        </label>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
+                            <thead className="bg-gray-100 dark:bg-gray-600">
+                              <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Code
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Nom
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Quantité
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Prix unitaire
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Total
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                              {formData.items.map((item, index) => (
+                                <tr key={index}>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      value={item.code}
+                                      onChange={(e) => updateDocumentItem(item.id, 'code', e.target.value)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      value={item.description}
+                                      onChange={(e) => updateDocumentItem(item.id, 'description', e.target.value)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="number"
+                                      value={item.quantity}
+                                      onChange={(e) => updateDocumentItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      min="1"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="number"
+                                      value={item.unitPrice}
+                                      onChange={(e) => updateDocumentItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      min="0"
+                                      step="0.01"
+                                    />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {item.total.toLocaleString()} DH
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => removeDocumentItem(item.id)}
+                                      className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                                    >
+                                      Supprimer
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1130,7 +1276,7 @@ const Documents: React.FC = () => {
                                             else if (res === 'updated') alert('Produit déjà dans la liste, informations mises à jour');
                                             else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
                                           }}
-                                          className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors min-w-[140px] text-center"
+                                          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
                                           Ajouter à la liste d'attente
                                         </button>
@@ -1190,7 +1336,7 @@ const Documents: React.FC = () => {
                                               window.addEventListener('resize', close, true);
                                               window.addEventListener('click', close, true);
                                             }}
-                                            className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors min-w-[140px] text-center"
+                                            className="px-4 py-2 text-sm bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                           >
                                             Quantités incorrectes
                                           </button>
@@ -1257,7 +1403,7 @@ const Documents: React.FC = () => {
                                             setFormData({ ...formData, notes: newNotes });
                                             alert('Produit rejeté');
                                           }}
-                                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
+                                          className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
                                           Rejeter
                                         </button>
@@ -1292,7 +1438,7 @@ const Documents: React.FC = () => {
                     })()}
                   </div>
                 </div>
-              ) : (
+              ) : formData.type !== 'customer_sales_order' && (
                 /* Regular Notes for other document types */
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1522,6 +1668,112 @@ const Documents: React.FC = () => {
                     })()}
                   </div>
                 </div>
+              ) : viewingDocument.type === 'customer_sales_order' ? (
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande client</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-3">
+                    {(() => {
+                      // Si les notes sont structurées (comme pour les bons de commande fournisseur)
+                      if (viewingDocument.notes && viewingDocument.notes.includes('Produits commandés:')) {
+                        const notes = viewingDocument.notes;
+                        const lines = notes.split('\n');
+                        const deliveryDateLine = lines.find(line => line.includes('Date de livraison souhaitée:'));
+                        const totalLine = lines.find(line => line.includes('Total:'));
+                        const productsStartIndex = lines.findIndex(line => line.includes('Produits commandés:'));
+                        const notesStartIndex = lines.findIndex(line => line.includes('Notes:'));
+                        
+                        const deliveryDate = deliveryDateLine ? deliveryDateLine.split(': ')[1] : '';
+                        const total = totalLine ? totalLine.split(': ')[1] : '';
+                        const products = lines.slice(productsStartIndex + 1, notesStartIndex).filter(line => line.trim().startsWith('•'));
+                        const notesText = notesStartIndex >= 0 ? lines.slice(notesStartIndex + 1).join('\n').trim() : '';
+                        
+                        return (
+                          <>
+                            {deliveryDate && (
+                              <div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">Date de livraison souhaitée:</span>
+                                <span className="ml-2 text-gray-900 dark:text-white">{deliveryDate}</span>
+                              </div>
+                            )}
+                            {total && (
+                              <div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                                <span className="ml-2 text-gray-900 dark:text-white">{total}</span>
+                              </div>
+                            )}
+                            {products.length > 0 && (
+                              <div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Produits commandés:</span>
+                                <div className="space-y-1">
+                                  {products.map((product, index) => (
+                                    <div key={index} className="text-sm text-gray-900 dark:text-white">
+                                      {product.replace('• ', '')}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {notesText && (
+                              <div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-1">Notes:</span>
+                                <div className="text-sm text-gray-900 dark:text-white">{notesText}</div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      } else {
+                        // Affichage par défaut pour les bons de commande client générés automatiquement
+                        return (
+                          <>
+                            <div>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                              <span className="ml-2 text-gray-900 dark:text-white">{parseAmount(viewingDocument.amount).toLocaleString()} DH</span>
+                            </div>
+                            {viewingDocument.items && viewingDocument.items.length > 0 && (
+                              <div>
+                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Produits vendus:</span>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
+                                    <thead className="bg-gray-100 dark:bg-gray-600">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                          Code
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                          Nom
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                          Quantité
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                          Prix unitaire
+                                        </th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                          Total
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                                      {viewingDocument.items.map((item, index) => (
+                                        <tr key={index}>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.code}</td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.description}</td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.quantity} {item.unit}</td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
+                                          <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{item.total.toLocaleString()} DH</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
               ) : viewingDocument.notes && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1557,6 +1809,15 @@ const Documents: React.FC = () => {
                 >
                   Télécharger PDF
                 </Button>
+                {viewingDocument.type === 'customer_sales_order' && (
+                  <Button 
+                    variant="success" 
+                    icon={<FileCheck className="w-4 h-4" />}
+                    onClick={() => handleCreateInvoice(viewingDocument)}
+                  >
+                    Créer Facture
+                  </Button>
+                )}
               </div>
             </div>
           </div>

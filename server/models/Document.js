@@ -64,6 +64,10 @@ const Document = sequelize.define('Document', {
   linkedDocuments: {
     type: DataTypes.ARRAY(DataTypes.UUID),
     defaultValue: []
+  },
+  items: {
+    type: DataTypes.JSON,
+    defaultValue: []
   }
 });
 
