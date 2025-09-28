@@ -122,22 +122,35 @@ class PDFGenerator {
     this.addFrenchText(`N° : ${documentData.number}`, 10, 55, 10);
     this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 10, 62, 10);
 
-    // Table headers
-    const headers = ['Code', 'Description', 'Qté', 'Unite', 'P.U', 'Total'];
+    // Table headers (remplacé Description -> Nom)
+    const headers = ['Code', 'Nom', 'Qté', 'Unité', 'P.U', 'Total'];
     
-    // Sample data - in real app, this would come from documentData.items
-    const sampleData = [
-      ['C325', 'رشاشة صباغة حمرا', '36', 'U', '11,00', '396,00'],
-      ['C4346', 'سلكون كحل', '24', 'U', '11,50', '276,00'],
-      ['C3114', 'قفل صاقطة بتيما ساروت 1/3 نحاس 12', '1', 'U', '68,00', '68,00'],
-      ['C3110', 'قفل صاقطة 1/1 بتيما 12', '1', 'U', '63,00', '63,00'],
-      ['C3901', 'قفل كويمون', '12', 'U', '17,00', '204,00']
-    ];
+    // Données réelles si dispo
+    let tableData: any[][] = [];
+    if (documentData.items && documentData.items.length > 0) {
+      tableData = documentData.items.map(item => [
+        item.code,
+        item.description,   // affiché comme "Nom"
+        item.quantity.toString(),
+        item.unit,
+        item.unitPrice.toLocaleString(),
+        item.total.toLocaleString()
+      ]);
+    } else {
+      // Données fallback
+      tableData = [
+        ['C325', 'رشاشة صباغة حمرا', '36', 'U', '11,00', '396,00'],
+        ['C4346', 'سلكون كحل', '24', 'U', '11,50', '276,00'],
+        ['C3114', 'قفل صاقطة بتيما ساروت 1/3 نحاس 12', '1', 'U', '68,00', '68,00'],
+        ['C3110', 'قفل صاقطة 1/1 بتيما 12', '1', 'U', '63,00', '63,00'],
+        ['C3901', 'قفل كويمون', '12', 'U', '17,00', '204,00']
+      ];
+    }
 
-    this.drawTable(headers, sampleData, 75);
+    this.drawTable(headers, tableData, 75);
 
     // Footer
-    this.addFrenchText('Nombre ligne: 5', 10, 180, 8);
+    this.addFrenchText(`Nombre ligne: ${tableData.length}`, 10, 180, 8);
     this.addFrenchText(`Total: ${documentData.amount.toLocaleString()} DH`, 100, 180, 10);
 
     return this.doc;
