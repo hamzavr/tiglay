@@ -237,7 +237,7 @@ const translations = {
     stockAlerts: 'Alertes de stock',
     
     // Company
-    companyName: 'MATÉRIAUX DE CONSTRUCTION',
+    companyName: 'BRIQUIN',
     
     // Workflow
     workflow: 'Flux de travail',

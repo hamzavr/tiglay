@@ -479,9 +479,6 @@ const Documents: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">{t('manageAllDocuments')}</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="secondary" icon={<Filter className="w-4 h-4" />}>
-            {t('filters')}
-          </Button>
           <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={openAddModal}>
             {t('newDocument')}
           </Button>
@@ -1568,8 +1565,8 @@ const Documents: React.FC = () => {
                 )}
               </div>
 
-              {/* Items Table */}
-              {viewingDocument.items && viewingDocument.items.length > 0 && (
+              {/* Items Table - Hidden for customer_sales_order */}
+              {viewingDocument.items && viewingDocument.items.length > 0 && viewingDocument.type !== 'customer_sales_order' && (
                 <div>
                   <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Articles</h4>
                   <div className="overflow-x-auto">

@@ -67,13 +67,46 @@ class DocumentWorkflowService {
   }
 
   /**
+   * Transforme les items de vente en format document
+   */
+  private transformSaleItemsToDocumentItems(saleData: any): Array<{
+    id: string;
+    code: string;
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    total: number;
+  }> {
+    // Récupérer les items depuis la vente sauvegardée
+    const saleItems = saleData.SaleItems || saleData.items || [];
+    
+    return saleItems.map((item: any, index: number) => {
+      const product = item.Product || item.product || {};
+      
+      return {
+        id: `item-${index}`,
+        code: product.code || item.code || '',
+        description: product.name || item.name || item.description || '',
+        quantity: item.quantity || 0,
+        unit: item.unit || product.unit || 'U',
+        unitPrice: item.price || item.unitPrice || 0,
+        total: item.total || (item.quantity * (item.price || item.unitPrice || 0))
+      };
+    });
+  }
+
+  /**
    * Crée automatiquement les documents du workflow après une vente client
    * Génère: Bon de commande client, Bon de livraison
    * Note: La facture n'est plus générée automatiquement, elle doit être créée manuellement via le bouton "Créer Facture"
    */
-  async createCustomerSaleDocuments(saleData: SaleData) {
+  async createCustomerSaleDocuments(saleData: any) {
     try {
       const documents = [];
+
+      // Transformer les items de la vente en format document
+      const documentItems = this.transformSaleItemsToDocumentItems(saleData);
 
       // 1. Bon de commande client (Étape 4)
       const customerOrder = await documentsAPI.create({
@@ -84,7 +117,7 @@ class DocumentWorkflowService {
         amount: saleData.total,
         clientId: saleData.clientId,
         notes: `Commande automatique générée depuis la vente ${saleData.id}`,
-        items: saleData.items,
+        items: documentItems,
         linkedDocuments: []
       });
       documents.push(customerOrder);
@@ -98,7 +131,7 @@ class DocumentWorkflowService {
         amount: saleData.total,
         clientId: saleData.clientId,
         notes: `Bon de livraison automatique pour la vente ${saleData.id}`,
-        items: saleData.items,
+        items: documentItems,
         linkedDocuments: [customerOrder.id || customerOrder.data?.id]
       });
       documents.push(deliveryNote);

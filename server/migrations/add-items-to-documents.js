@@ -12,3 +12,4 @@ module.exports = {
     await queryInterface.removeColumn('Documents', 'items');
   }
 };
+
