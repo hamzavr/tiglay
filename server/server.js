@@ -10,6 +10,7 @@ const models = require('./models');
 
 // Import routes
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
 const productRoutes = require('./routes/products');
 const salesRoutes = require('./routes/sales');
 const supplierRoutes = require('./routes/suppliers');
@@ -46,6 +47,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/suppliers', supplierRoutes);

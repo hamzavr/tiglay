@@ -16,7 +16,7 @@ import Settings from './components/modules/Settings';
 import WaitingList from './components/modules/WaitingList';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Gérer la navigation via hash
@@ -59,19 +59,19 @@ function AppContent() {
       case 'dashboard':
         return <Dashboard />;
       case 'inventory':
-        return <Inventory />;
+        return hasPermission('canAccessInventory') ? <Inventory /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'suppliers':
-        return <Suppliers />;
+        return hasPermission('canAccessSuppliers') ? <Suppliers /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'clients':
-        return <Clients />;
+        return hasPermission('canAccessClients') ? <Clients /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'documents':
-        return <Documents />;
+        return hasPermission('canAccessDocuments') ? <Documents /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'waiting':
-        return <WaitingList />;
+        return hasPermission('canAccessWaiting') ? <WaitingList /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'reports':
-        return <Reports />;
+        return hasPermission('canAccessReports') ? <Reports /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'settings':
-        return <Settings />;
+        return hasPermission('canAccessSettings') ? <Settings /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       default:
         return <Dashboard />;
     }

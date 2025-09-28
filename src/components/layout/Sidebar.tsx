@@ -10,6 +10,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -18,17 +19,22 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { t, isRTL } = useLanguage();
+  const { hasPermission } = useAuth();
 
-  const menuItems = [
-    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { id: 'inventory', label: t('inventory'), icon: Package },
-    { id: 'suppliers', label: t('suppliers'), icon: Users },
-    { id: 'clients', label: t('clients'), icon: UserCheck },
-    { id: 'documents', label: t('documents'), icon: FileText },
-    { id: 'waiting', label: 'Liste d’attente', icon: Clock },
-    { id: 'reports', label: t('reports'), icon: BarChart3 },
-    { id: 'settings', label: t('settings'), icon: Settings }
+  const allMenuItems = [
+    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard, permission: null },
+    { id: 'inventory', label: t('inventory'), icon: Package, permission: 'canAccessInventory' },
+    { id: 'suppliers', label: t('suppliers'), icon: Users, permission: 'canAccessSuppliers' },
+    { id: 'clients', label: t('clients'), icon: UserCheck, permission: 'canAccessClients' },
+    { id: 'documents', label: t('documents'), icon: FileText, permission: 'canAccessDocuments' },
+    { id: 'waiting', label: 'Liste d\'attente', icon: Clock, permission: 'canAccessWaiting' },
+    { id: 'reports', label: t('reports'), icon: BarChart3, permission: 'canAccessReports' },
+    { id: 'settings', label: t('settings'), icon: Settings, permission: 'canAccessSettings' }
   ];
+
+  const menuItems = allMenuItems.filter(item => 
+    !item.permission || hasPermission(item.permission as any)
+  );
 
   return (
     <div className="w-64 bg-white dark:bg-gray-800 shadow-lg h-full border-r border-gray-200 dark:border-gray-700">

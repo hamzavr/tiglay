@@ -1,12 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: 'admin' | 'manager' | 'cashier';
-}
+import { User, UserPermissions, ROLE_PERMISSIONS } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +9,8 @@ interface AuthContextType {
   register: (username: string, email: string, password: string, role?: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  permissions: UserPermissions | null;
+  hasPermission: (permission: keyof UserPermissions) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +23,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
 
   useEffect(() => {
     if (token) {
@@ -40,7 +37,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const fetchUser = async () => {
     try {
       const response = await axios.get('/auth/me');
-      setUser(response.data.user);
+      const userData = response.data.user;
+      setUser(userData);
+      setPermissions(ROLE_PERMISSIONS[userData.role] || null);
     } catch (error) {
       console.error('Failed to fetch user:', error);
       logout();
@@ -56,6 +55,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setToken(newToken);
       setUser(userData);
+      setPermissions(ROLE_PERMISSIONS[userData.role] || null);
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
@@ -70,6 +70,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setToken(newToken);
       setUser(userData);
+      setPermissions(ROLE_PERMISSIONS[userData.role] || null);
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
@@ -80,12 +81,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     setUser(null);
     setToken(null);
+    setPermissions(null);
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const hasPermission = (permission: keyof UserPermissions): boolean => {
+    return permissions ? permissions[permission] : false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, loading, permissions, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

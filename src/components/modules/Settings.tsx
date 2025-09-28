@@ -1,29 +1,88 @@
-import React, { useState } from 'react';
-import { Settings as SettingsIcon, Building, Users, Bell, Shield, Database, Globe, Palette } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings as SettingsIcon, Building, Users, Bell, Globe, Palette, Edit, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { User, CreateUserData, UpdateUserData } from '../../types';
+import { userService } from '../../services/userService';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
+import UserManagementModal from './UserManagementModal';
 
 const Settings: React.FC = () => {
   const { t, language, setLanguage, isRTL } = useLanguage();
   const { isDark, toggleTheme } = useTheme();
+  const { hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
   const settingsTabs = [
     { id: 'general', label: t('generalSettings'), icon: SettingsIcon },
     { id: 'company', label: t('companyInfo'), icon: Building },
-    { id: 'users', label: t('userManagement'), icon: Users },
-    { id: 'notifications', label: t('notifications'), icon: Bell },
-    { id: 'security', label: t('security'), icon: Shield },
-    { id: 'backup', label: t('backupRestore'), icon: Database }
+    ...(hasPermission('canManageUsers') ? [{ id: 'users', label: t('userManagement'), icon: Users }] : []),
+    { id: 'notifications', label: t('notifications'), icon: Bell }
   ];
 
-  const users = [
-    { id: 1, username: 'admin', role: 'Administrator', lastLogin: '2024-01-15 10:30', status: 'active' },
-    { id: 2, username: 'cashier1', role: 'Cashier', lastLogin: '2024-01-15 09:15', status: 'active' },
-    { id: 3, username: 'manager', role: 'Manager', lastLogin: '2024-01-14 16:45', status: 'active' }
-  ];
+  // Charger les utilisateurs au montage du composant
+  useEffect(() => {
+    if (hasPermission('canManageUsers')) {
+      fetchUsers();
+    }
+  }, [hasPermission]);
+
+  const fetchUsers = async () => {
+    try {
+      const users = await userService.getUsers();
+      setUsers(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const handleCreateUser = () => {
+    setEditingUser(null);
+    setModalMode('create');
+    setIsUserModalOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setModalMode('edit');
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+      try {
+        await userService.deleteUser(userId);
+        setUsers(prev => prev.filter(user => user.id !== userId));
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Erreur lors de la suppression de l\'utilisateur');
+      }
+    }
+  };
+
+  const handleSaveUser = async (userData: CreateUserData | UpdateUserData) => {
+    try {
+      if (modalMode === 'create') {
+        const newUser = await userService.createUser(userData as CreateUserData);
+        setUsers(prev => [...prev, newUser]);
+      } else {
+        const updatedUser = await userService.updateUser(userData as UpdateUserData);
+        setUsers(prev => prev.map(user => 
+          user.id === editingUser!.id ? updatedUser : user
+        ));
+      }
+      setIsUserModalOpen(false);
+    } catch (error) {
+      console.error('Error saving user:', error);
+      throw error;
+    }
+  };
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
@@ -167,7 +226,7 @@ const Settings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('users')}</h3>
-        <Button variant="primary">
+        <Button variant="primary" onClick={handleCreateUser}>
           {t('addUser')}
         </Button>
       </div>
@@ -177,6 +236,7 @@ const Settings: React.FC = () => {
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('username')}</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('role')}</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('lastLogin')}</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('status')}</th>
@@ -187,19 +247,41 @@ const Settings: React.FC = () => {
             {users.map((user) => (
               <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">{user.username}</td>
-                <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{user.role}</td>
-                <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{user.lastLogin}</td>
+                <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{user.email}</td>
+                <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                    {user.role === 'admin' ? 'Administrateur' : 
+                     user.role === 'manager' ? 'Manager' : 'Caissier'}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Jamais'}
+                </td>
                 <td className="py-3 px-4">
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                    {user.status}
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    user.isActive 
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                  }`}>
+                    {user.isActive ? 'Actif' : 'Inactif'}
                   </span>
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex space-x-2">
-                    <Button variant="secondary" size="sm">
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={() => handleEditUser(user)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
                       {t('edit')}
                     </Button>
-                    <Button variant="danger" size="sm">
+                    <Button 
+                      variant="danger" 
+                      size="sm"
+                      onClick={() => handleDeleteUser(user.id)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
                       {t('delete')}
                     </Button>
                   </div>
@@ -237,16 +319,6 @@ const Settings: React.FC = () => {
           </label>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white">{t('emailNotifications')}</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Recevoir des notifications par email</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
       </div>
     </div>
   );
@@ -261,20 +333,6 @@ const Settings: React.FC = () => {
         return renderUserManagement();
       case 'notifications':
         return renderNotifications();
-      case 'security':
-        return (
-          <div className="text-center py-8">
-            <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">{t('security')} - Module en développement</p>
-          </div>
-        );
-      case 'backup':
-        return (
-          <div className="text-center py-8">
-            <Database className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">{t('backupRestore')} - Module en développement</p>
-          </div>
-        );
       default:
         return renderGeneralSettings();
     }
@@ -321,6 +379,15 @@ const Settings: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal de gestion des utilisateurs */}
+      <UserManagementModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onSave={handleSaveUser}
+        editingUser={editingUser}
+        mode={modalMode}
+      />
     </div>
   );
 };
