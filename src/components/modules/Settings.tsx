@@ -18,6 +18,14 @@ const Settings: React.FC = () => {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [companyData, setCompanyData] = useState({
+    name: 'Droguerie Moderne',
+    phone: '+212 5XX XXX XXX',
+    address: '123 Rue Mohammed V, Casablanca, Maroc',
+    email: 'contact@droguerie.ma',
+    taxNumber: '123456789'
+  });
 
   const settingsTabs = [
     { id: 'general', label: t('generalSettings'), icon: SettingsIcon },
@@ -82,6 +90,25 @@ const Settings: React.FC = () => {
       console.error('Error saving user:', error);
       throw error;
     }
+  };
+
+  const handleEditCompany = () => {
+    setIsEditingCompany(true);
+  };
+
+  const handleSaveCompany = () => {
+    // TODO: Sauvegarder les données de l'entreprise
+    console.log('Saving company data:', companyData);
+    setIsEditingCompany(false);
+  };
+
+  const handleCancelEditCompany = () => {
+    setIsEditingCompany(false);
+    // Réinitialiser les données si nécessaire
+  };
+
+  const handleCompanyDataChange = (field: string, value: string) => {
+    setCompanyData(prev => ({ ...prev, [field]: value }));
   };
 
   const renderGeneralSettings = () => (
@@ -157,67 +184,114 @@ const Settings: React.FC = () => {
 
   const renderCompanyInfo = () => (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Informations de l'entreprise</h3>
+        {!isEditingCompany ? (
+          <Button variant="primary" onClick={handleEditCompany}>
+            Modifier
+          </Button>
+        ) : (
+          <div className="flex space-x-2">
+            <Button variant="secondary" onClick={handleCancelEditCompany}>
+              Annuler
+            </Button>
+            <Button variant="primary" onClick={handleSaveCompany}>
+              Enregistrer
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('name')}
           </label>
-          <input
-            type="text"
-            defaultValue={t('companyName')}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+          {isEditingCompany ? (
+            <input
+              type="text"
+              value={companyData.name}
+              onChange={(e) => handleCompanyDataChange('name', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          ) : (
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600">
+              {companyData.name}
+            </div>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('phone')}
           </label>
-          <input
-            type="tel"
-            defaultValue="+212 5XX XXX XXX"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+          {isEditingCompany ? (
+            <input
+              type="tel"
+              value={companyData.phone}
+              onChange={(e) => handleCompanyDataChange('phone', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          ) : (
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600">
+              {companyData.phone}
+            </div>
+          )}
         </div>
 
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('address')}
           </label>
-          <textarea
-            rows={3}
-            defaultValue="123 Rue Mohammed V, Casablanca, Maroc"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+          {isEditingCompany ? (
+            <textarea
+              rows={3}
+              value={companyData.address}
+              onChange={(e) => handleCompanyDataChange('address', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          ) : (
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600 min-h-[80px]">
+              {companyData.address}
+            </div>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('email')}
           </label>
-          <input
-            type="email"
-            defaultValue="contact@droguerie.ma"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+          {isEditingCompany ? (
+            <input
+              type="email"
+              value={companyData.email}
+              onChange={(e) => handleCompanyDataChange('email', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          ) : (
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600">
+              {companyData.email}
+            </div>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             {t('taxNumber')}
           </label>
-          <input
-            type="text"
-            defaultValue="123456789"
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          />
+          {isEditingCompany ? (
+            <input
+              type="text"
+              value={companyData.taxNumber}
+              onChange={(e) => handleCompanyDataChange('taxNumber', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
+          ) : (
+            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600">
+              {companyData.taxNumber}
+            </div>
+          )}
         </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button variant="primary">
-          {t('save')}
-        </Button>
       </div>
     </div>
   );

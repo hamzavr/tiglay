@@ -1130,7 +1130,7 @@ const Documents: React.FC = () => {
                                             else if (res === 'updated') alert('Produit déjà dans la liste, informations mises à jour');
                                             else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
                                           }}
-                                          className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                                          className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
                                           Ajouter à la liste d'attente
                                         </button>
@@ -1190,7 +1190,7 @@ const Documents: React.FC = () => {
                                               window.addEventListener('resize', close, true);
                                               window.addEventListener('click', close, true);
                                             }}
-                                            className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors"
+                                            className="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                           >
                                             Quantités incorrectes
                                           </button>
@@ -1257,7 +1257,7 @@ const Documents: React.FC = () => {
                                             setFormData({ ...formData, notes: newNotes });
                                             alert('Produit rejeté');
                                           }}
-                                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                                          className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
                                           Rejeter
                                         </button>

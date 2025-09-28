@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Calendar, Filter, Download, AlertTriangle, Package, Users, DollarSign } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Calendar, AlertTriangle, Package, Users, DollarSign } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApi } from '../../hooks/useApi';
 import { salesAPI, productsAPI, clientsAPI } from '../../services/api';
@@ -151,72 +151,76 @@ const Reports: React.FC = () => {
     year: 'Cette année'
   };
 
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    alert('Fonctionnalité d\'export à implémenter');
-  };
-
-  const handleFilter = () => {
-    // TODO: Implement advanced filtering
-    alert('Filtres avancés à implémenter');
-  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports')}</h2>
-          <p className="text-gray-600 dark:text-gray-400">Analyses et rapports détaillés en temps réel</p>
-        </div>
-        <div className="flex space-x-2">
-          <Button variant="secondary" icon={<Filter className="w-4 h-4" />} onClick={handleFilter}>
-            Filtres
-          </Button>
-          <Button variant="primary" icon={<Download className="w-4 h-4" />} onClick={handleExport}>
-            Exporter
-          </Button>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('reports')}</h2>
+        <p className="text-gray-600 dark:text-gray-400">Analyses et rapports détaillés en temps réel</p>
       </div>
 
       {/* Filters */}
       <Card>
-        <div className="flex flex-col md:flex-row gap-4">
-          <select
-            value={selectedReport}
-            onChange={(e) => setSelectedReport(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          >
-            {Object.entries(reportTypes).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Type de rapport
+            </label>
+            <select
+              value={selectedReport}
+              onChange={(e) => setSelectedReport(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              {Object.entries(reportTypes).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          >
-            {Object.entries(periods).map(([key, label]) => (
-              <option key={key} value={label}>{label}</option>
-            ))}
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Période
+            </label>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              {Object.entries(periods).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
 
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-gray-400" />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-            <span className="text-gray-500">à</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date de début
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date de fin
+            </label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
           </div>
         </div>
       </Card>
