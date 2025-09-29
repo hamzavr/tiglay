@@ -102,6 +102,18 @@ const Documents: React.FC = () => {
       console.log('Customer orders:', customerOrders);
       customerOrders.forEach(order => {
         console.log(`Order ${order.number} items:`, order.items);
+        console.log(`Order ${order.number} Client:`, order.Client);
+        console.log(`Order ${order.number} clientId:`, order.clientId);
+      });
+      
+      // Debug all documents for Client/Supplier relations
+      documents.forEach(doc => {
+        console.log(`Document ${doc.number} (${doc.type}):`, {
+          clientId: doc.clientId,
+          supplierId: doc.supplierId,
+          Client: doc.Client,
+          Supplier: doc.Supplier
+        });
       });
     }
   }, [documents]);
@@ -454,7 +466,7 @@ const Documents: React.FC = () => {
       // Créer une facture basée sur le bon de commande client
       const invoiceData = {
         type: 'invoice',
-        clientId: customerOrder.Client?.id,
+        clientId: customerOrder.Client?.id || customerOrder.clientId,
         amount: customerOrder.amount,
         status: 'draft',
         notes: `Facture générée à partir du bon de commande ${customerOrder.number}`,
@@ -644,7 +656,11 @@ const Documents: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{new Date(doc.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                    {doc.Client?.name || doc.Supplier?.name || 'N/A'}
+                    {doc.Client?.name 
+                      || (doc.clientId && (clients || []).find((c: any) => c.id === (doc as any).clientId)?.name)
+                      || doc.Supplier?.name 
+                      || (doc.supplierId && (suppliers || []).find((s: any) => s.id === (doc as any).supplierId)?.name)
+                      || 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">
                     {parseAmount(doc.amount).toLocaleString()} DH

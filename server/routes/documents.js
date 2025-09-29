@@ -29,12 +29,23 @@ router.get('/', auth, async (req, res) => {
     const documents = await Document.findAll({
       where,
       include: [
-        { model: Supplier, attributes: ['name'], required: false },
-        { model: Client, attributes: ['name'], required: false },
+        { model: Supplier, attributes: ['id', 'name'], required: false },
+        { model: Client, attributes: ['id', 'name'], required: false },
         { model: User, attributes: ['username'], required: false }
       ],
       order: [['createdAt', 'DESC']]
     });
+
+    // Debug: Log documents with their relations
+    console.log('Documents retrieved with relations:', documents.map(doc => ({
+      id: doc.id,
+      number: doc.number,
+      type: doc.type,
+      clientId: doc.clientId,
+      supplierId: doc.supplierId,
+      Client: doc.Client,
+      Supplier: doc.Supplier
+    })));
 
     res.json(documents);
   } catch (error) {

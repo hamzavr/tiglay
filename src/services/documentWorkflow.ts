@@ -115,7 +115,7 @@ class DocumentWorkflowService {
         workflowStep: 4,
         status: 'sent',
         amount: saleData.total,
-        clientId: saleData.clientId,
+        clientId: saleData.clientId || saleData.Client?.id,
         notes: `Commande automatique générée depuis la vente ${saleData.id}`,
         items: documentItems,
         linkedDocuments: []
@@ -129,7 +129,7 @@ class DocumentWorkflowService {
         workflowStep: 5,
         status: 'sent',
         amount: saleData.total,
-        clientId: saleData.clientId,
+        clientId: saleData.clientId || saleData.Client?.id,
         notes: `Bon de livraison automatique pour la vente ${saleData.id}`,
         items: documentItems,
         linkedDocuments: [customerOrder.id || customerOrder.data?.id]

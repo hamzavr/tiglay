@@ -60,13 +60,19 @@ class PDFGenerator {
     
     // Draw headers
     this.doc.setFillColor(240, 240, 240);
+    this.doc.setTextColor(0, 0, 0); // Set text color to black
     headers.forEach((header, index) => {
       const x = margin + (index * colWidth);
       this.doc.rect(x, startY, colWidth, 8, 'F');
+      // Draw text on top of the filled rectangle
+      this.doc.setFillColor(255, 255, 255); // White background for text
+      this.doc.rect(x + 1, startY + 1, colWidth - 2, 6, 'F');
+      this.doc.setTextColor(0, 0, 0); // Black text
       this.addFrenchText(header, x + 2, startY + 6, 8);
     });
 
     // Draw data rows
+    this.doc.setTextColor(0, 0, 0); // Ensure text color is black for data
     data.forEach((row, rowIndex) => {
       const y = startY + 8 + (rowIndex * 6);
       row.forEach((cell, colIndex) => {
@@ -102,28 +108,27 @@ class PDFGenerator {
   }
 
   generateDeliveryNote(documentData: DocumentData) {
-    // Header
+    // Header with page number
     this.addFrenchText('1/1', 130, 15, 8);
-    this.addFrenchText('Réf client: CLI2024-73', 10, 15, 8);
     
-    // Client info
+    // Client info section with dotted border
     if (documentData.Client) {
+      this.addFrenchText('Liv:', 10, 25, 8);
       this.addArabicText(documentData.Client.name, 130, 25, 12);
-      this.addArabicText('العرجات العرجات', 130, 32, 10);
+      this.addArabicText('النهضة', 130, 32, 10);
     }
+    this.addFrenchText('Vend: Nour Eddine', 80, 32, 8);
 
-    // Document references
-    this.addFrenchText('BC N°: ................', 10, 25, 8);
-    this.addFrenchText('Liv: ................', 10, 32, 8);
-    this.addFrenchText('Vend: نور الدين', 80, 32, 8);
-
-    // Document title and number
+    // Document title
     this.addFrenchText('BON DE LIVRAISON', 10, 45, 16);
-    this.addFrenchText(`N° : ${documentData.number}`, 10, 55, 10);
-    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 10, 62, 10);
 
-    // Table headers (remplacé Description -> Nom)
-    const headers = ['Code', 'Nom', 'Qté', 'Unité', 'P.U', 'Total'];
+    // Document details in horizontal layout
+    this.addFrenchText(`N°: ${documentData.number}`, 10, 55, 10);
+    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 50, 55, 10);
+    this.addFrenchText(`Réf client: ${documentData.Client?.name || 'N/A'}`, 100, 55, 10);
+
+    // Table headers (Description -> Nom)
+    const headers = ['Code', 'Nom', 'Qté', 'P.U', 'Total'];
     
     // Données réelles si dispo
     let tableData: any[][] = [];
@@ -132,47 +137,120 @@ class PDFGenerator {
         item.code,
         item.description,   // affiché comme "Nom"
         item.quantity.toString(),
-        item.unit,
         item.unitPrice.toLocaleString(),
         item.total.toLocaleString()
       ]);
     } else {
       // Données fallback
       tableData = [
-        ['C325', 'رشاشة صباغة حمرا', '36', 'U', '11,00', '396,00'],
-        ['C4346', 'سلكون كحل', '24', 'U', '11,50', '276,00'],
-        ['C3114', 'قفل صاقطة بتيما ساروت 1/3 نحاس 12', '1', 'U', '68,00', '68,00'],
-        ['C3110', 'قفل صاقطة 1/1 بتيما 12', '1', 'U', '63,00', '63,00'],
-        ['C3901', 'قفل كويمون', '12', 'U', '17,00', '204,00']
+        ['C1315', 'بواني بلير منقوش', '12', '45,00', '540,00'],
+        ['C625', 'رويضة كري فران', '20', '7,50', '150,00'],
+        ['C4346', 'سلكون كحل AB', '25', '46,50', '1 162,50'],
+        ['C4346', 'كوليس بيا 50', '20', '16,00', '320,00'],
+        ['C4346', 'وترة زرقاء', '10', '9,00', '90,00']
       ];
     }
 
     this.drawTable(headers, tableData, 75);
 
     // Footer
-    this.addFrenchText(`Nombre ligne: ${tableData.length}`, 10, 180, 8);
+    this.addFrenchText(`Total: ${documentData.amount.toLocaleString()} DH`, 100, 180, 10);
+
+    return this.doc;
+  }
+
+  generateCustomerSalesOrder(documentData: DocumentData) {
+    // Header with page number
+    this.addFrenchText('1/1', 130, 15, 8);
+    
+    // Client info section
+    if (documentData.Client) {
+      this.addFrenchText('Liv:', 10, 25, 8);
+      this.addArabicText(documentData.Client.name, 130, 25, 12);
+      this.addArabicText('النهضة', 130, 32, 10);
+    }
+    this.addFrenchText('Vend: Nour Eddine', 80, 32, 8);
+
+    // Document title
+    this.addFrenchText('BON DE COMMANDE CLIENT', 10, 45, 16);
+
+    // Document details in horizontal layout
+    this.addFrenchText(`N°: ${documentData.number}`, 10, 55, 10);
+    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 50, 55, 10);
+    this.addFrenchText(`Réf client: ${documentData.Client?.name || 'N/A'}`, 100, 55, 10);
+
+    // Table headers (Description -> Nom)
+    const headers = ['Code', 'Nom', 'Qté', 'P.U', 'Total'];
+    
+    // Données réelles si dispo
+    let tableData: any[][] = [];
+    if (documentData.items && documentData.items.length > 0) {
+      tableData = documentData.items.map(item => [
+        item.code,
+        item.description,   // affiché comme "Nom"
+        item.quantity.toString(),
+        item.unitPrice.toLocaleString(),
+        item.total.toLocaleString()
+      ]);
+    } else {
+      // Données fallback
+      tableData = [
+        ['C1315', 'بواني بلير منقوش', '12', '45,00', '540,00'],
+        ['C625', 'رويضة كري فران', '20', '7,50', '150,00'],
+        ['C4346', 'سلكون كحل AB', '25', '46,50', '1 162,50']
+      ];
+    }
+
+    this.drawTable(headers, tableData, 75);
+
+    // Footer
     this.addFrenchText(`Total: ${documentData.amount.toLocaleString()} DH`, 100, 180, 10);
 
     return this.doc;
   }
 
   generateInvoice(documentData: DocumentData) {
-    // Similar to delivery note but with invoice-specific elements
-    this.addFrenchText('FACTURE', 10, 45, 16);
-    this.addFrenchText(`N° : ${documentData.number}`, 10, 55, 10);
-    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 10, 62, 10);
-
-    // Add tax information
-    this.addFrenchText('TVA: 20%', 10, 70, 8);
+    // Header with page number
+    this.addFrenchText('1/1', 130, 15, 8);
     
-    // Same table structure as delivery note
-    const headers = ['Code', 'Description', 'Qté', 'Unite', 'P.U', 'Total'];
-    const sampleData = [
-      ['C325', 'رشاشة صباغة حمرا', '36', 'U', '11,00', '396,00'],
-      ['C4346', 'سلكون كحل', '24', 'U', '11,50', '276,00']
-    ];
+    // Client info section
+    if (documentData.Client) {
+      this.addFrenchText('Liv:', 10, 25, 8);
+      this.addArabicText(documentData.Client.name, 130, 25, 12);
+      this.addArabicText('النهضة', 130, 32, 10);
+    }
+    this.addFrenchText('Vend: Nour Eddine', 80, 32, 8);
 
-    this.drawTable(headers, sampleData, 85);
+    // Document title
+    this.addFrenchText('FACTURE', 10, 45, 16);
+
+    // Document details in horizontal layout
+    this.addFrenchText(`N°: ${documentData.number}`, 10, 55, 10);
+    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 50, 55, 10);
+    this.addFrenchText(`Réf client: ${documentData.Client?.name || 'N/A'}`, 100, 55, 10);
+
+    // Table headers (Description -> Nom)
+    const headers = ['Code', 'Nom', 'Qté', 'P.U', 'Total'];
+    
+    // Données réelles si dispo
+    let tableData: any[][] = [];
+    if (documentData.items && documentData.items.length > 0) {
+      tableData = documentData.items.map(item => [
+        item.code,
+        item.description,   // affiché comme "Nom"
+        item.quantity.toString(),
+        item.unitPrice.toLocaleString(),
+        item.total.toLocaleString()
+      ]);
+    } else {
+      // Données fallback
+      tableData = [
+        ['C1315', 'بواني بلير منقوش', '12', '45,00', '540,00'],
+        ['C625', 'رويضة كري فران', '20', '7,50', '150,00']
+      ];
+    }
+
+    this.drawTable(headers, tableData, 75);
 
     // Footer with tax calculations
     const subtotal = documentData.amount / 1.2;
@@ -186,22 +264,24 @@ class PDFGenerator {
   }
 
   generatePurchaseOrder(documentData: DocumentData) {
-    // Company header
-    this.addFrenchText(this.companyInfo.name, 10, 15, 14);
-    this.addFrenchText(this.companyInfo.address, 10, 22, 8);
-    this.addFrenchText(`Tél: ${this.companyInfo.phone}`, 10, 28, 8);
-    this.addFrenchText(`Email: ${this.companyInfo.email}`, 10, 34, 8);
-
-    // Document title and number
-    this.addFrenchText('BON DE COMMANDE FOURNISSEUR', 10, 50, 16);
-    this.addFrenchText(`N° : ${documentData.number}`, 10, 60, 10);
-    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 10, 67, 10);
-
-    // Supplier info
+    // Header with page number
+    this.addFrenchText('1/1', 130, 15, 8);
+    
+    // Supplier info section
     if (documentData.Supplier) {
-      this.addFrenchText('Fournisseur:', 10, 80, 10);
-      this.addArabicText(documentData.Supplier.name, 130, 80, 12);
+      this.addFrenchText('Liv:', 10, 25, 8);
+      this.addArabicText(documentData.Supplier.name, 130, 25, 12);
+      this.addArabicText('النهضة', 130, 32, 10);
     }
+    this.addFrenchText('Vend: Nour Eddine', 80, 32, 8);
+
+    // Document title
+    this.addFrenchText('BON DE COMMANDE FOURNISSEUR', 10, 45, 16);
+
+    // Document details in horizontal layout
+    this.addFrenchText(`N°: ${documentData.number}`, 10, 55, 10);
+    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 50, 55, 10);
+    this.addFrenchText(`Réf fournisseur: ${documentData.Supplier?.name || 'N/A'}`, 100, 55, 10);
 
     // Parse order details from notes
     let orderInfo: any = {};
@@ -211,23 +291,19 @@ class PDFGenerator {
 
     // Order details
     if (orderInfo.deliveryDate) {
-      this.addFrenchText(`Date de livraison souhaitée: ${orderInfo.deliveryDate}`, 10, 95, 8);
-    }
-    if (orderInfo.paymentTerms) {
-      this.addFrenchText(`Conditions de paiement: ${orderInfo.paymentTerms}`, 10, 102, 8);
+      this.addFrenchText(`Date de livraison souhaitée: ${orderInfo.deliveryDate}`, 10, 70, 8);
     }
 
-    // Products table
-    const headers = ['Code', 'Description', 'Qté', 'Unite', 'P.U', 'Total'];
+    // Table headers (Description -> Nom)
+    const headers = ['Code', 'Nom', 'Qté', 'P.U', 'Total'];
     
     let tableData: any[][] = [];
     if (documentData.items && documentData.items.length > 0) {
       // Use real data from document
       tableData = documentData.items.map(item => [
         item.code,
-        item.description,
+        item.description,   // affiché comme "Nom"
         item.quantity.toString(),
-        item.unit,
         item.unitPrice.toLocaleString(),
         item.total.toLocaleString()
       ]);
@@ -246,7 +322,6 @@ class PDFGenerator {
           codeMatch ? codeMatch[1].trim() : '',
           descMatch ? descMatch[1].trim() : '',
           detailsMatch ? detailsMatch[1] : '',
-          detailsMatch ? detailsMatch[2] : '',
           detailsMatch ? detailsMatch[3] : '',
           detailsMatch ? detailsMatch[4] : ''
         ];
@@ -254,15 +329,15 @@ class PDFGenerator {
     } else {
       // Fallback sample data
       tableData = [
-        ['P001', 'Produit 1', '10', 'U', '50,00', '500,00'],
-        ['P002', 'Produit 2', '5', 'U', '30,00', '150,00']
+        ['P001', 'Produit 1', '10', '50,00', '500,00'],
+        ['P002', 'Produit 2', '5', '30,00', '150,00']
       ];
     }
 
-    this.drawTable(headers, tableData, 115);
+    this.drawTable(headers, tableData, 85);
 
     // Footer
-    this.addFrenchText(`Total: ${documentData.amount.toLocaleString()} DH`, 80, 180, 10);
+    this.addFrenchText(`Total: ${documentData.amount.toLocaleString()} DH`, 100, 180, 10);
     
     // Additional notes
     if (orderInfo.notes) {
@@ -319,6 +394,8 @@ class PDFGenerator {
     switch (type) {
       case 'delivery_note':
         return this.generateDeliveryNote(documentData);
+      case 'customer_sales_order':
+        return this.generateCustomerSalesOrder(documentData);
       case 'invoice':
         return this.generateInvoice(documentData);
       case 'supplier_purchase_order':
