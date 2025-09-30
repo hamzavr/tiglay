@@ -39,7 +39,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await axios.get('/auth/me');
       const userData = response.data.user;
       setUser(userData);
-      setPermissions(ROLE_PERMISSIONS[userData.role] || null);
+      // Admin a toujours tous les accès
+      if (userData.role === 'admin') {
+        setPermissions(ROLE_PERMISSIONS.admin);
+      } else {
+        // Utiliser les permissions personnalisées ou celles par défaut du rôle
+        setPermissions(userData.permissions || ROLE_PERMISSIONS[userData.role] || null);
+      }
     } catch (error) {
       console.error('Failed to fetch user:', error);
       logout();
@@ -55,7 +61,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setToken(newToken);
       setUser(userData);
-      setPermissions(ROLE_PERMISSIONS[userData.role] || null);
+      if (userData.role === 'admin') {
+        setPermissions(ROLE_PERMISSIONS.admin);
+      } else {
+        setPermissions(userData.permissions || ROLE_PERMISSIONS[userData.role] || null);
+      }
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
@@ -63,14 +73,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const register = async (username: string, email: string, password: string, role = 'cashier') => {
+  const register = async (username: string, email: string, password: string, role = 'manager') => {
     try {
       const response = await axios.post('/auth/register', { username, email, password, role });
       const { token: newToken, user: userData } = response.data;
       
       setToken(newToken);
       setUser(userData);
-      setPermissions(ROLE_PERMISSIONS[userData.role] || null);
+      if (userData.role === 'admin') {
+        setPermissions(ROLE_PERMISSIONS.admin);
+      } else {
+        setPermissions(userData.permissions || ROLE_PERMISSIONS[userData.role] || null);
+      }
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     } catch (error: any) {
@@ -87,6 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const hasPermission = (permission: keyof UserPermissions): boolean => {
+    if (user?.role === 'admin') return true;
     return permissions ? permissions[permission] : false;
   };
 

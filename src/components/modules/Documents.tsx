@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Download, Eye, Plus, X, CheckCircle, Circle, Clock, AlertCircle, Filter, Search, Edit, Trash2, Save, Calendar, User, Package, Truck, Receipt, FileCheck, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApi } from '../../hooks/useApi';
-import { documentsAPI, suppliersAPI, clientsAPI } from '../../services/api';
+import { documentsAPI, suppliersAPI, clientsAPI, productsAPI } from '../../services/api';
 import PDFGenerator from '../../services/pdfGenerator';
 import companyConfig from '../../config/company';
 import Card from '../ui/Card';
@@ -81,6 +81,7 @@ const Documents: React.FC = () => {
 
   // Fetch documents from API
   const { data: documents, loading: documentsLoading, error: documentsError, execute: fetchDocuments } = useApi(documentsAPI.getAll);
+  const { data: productCatalog = [], execute: fetchProducts } = useApi(productsAPI.getAll);
   const { data: clients, execute: fetchClients } = useApi(clientsAPI.getAll);
   const { data: suppliers, execute: fetchSuppliers } = useApi(suppliersAPI.getAll);
   const { execute: createDocument } = useApi(documentsAPI.create);
@@ -92,6 +93,7 @@ const Documents: React.FC = () => {
     fetchDocuments();
     fetchClients();
     fetchSuppliers();
+    fetchProducts({});
   }, []);
 
   // Debug: Log documents when they are loaded
@@ -800,8 +802,8 @@ const Documents: React.FC = () => {
                 </div>
               </div>
 
-              {/* Client/Supplier Selection - Hidden for supplier_purchase_order and customer_sales_order */}
-              {formData.type !== 'supplier_purchase_order' && formData.type !== 'customer_sales_order' && (
+              {/* Client/Supplier Selection - Hidden for supplier_purchase_order, customer_sales_order, delivery_note, invoice */}
+              {!(['supplier_purchase_order','customer_sales_order','delivery_note','invoice'].includes(formData.type)) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -864,6 +866,9 @@ const Documents: React.FC = () => {
                           <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
                             <thead className="bg-gray-100 dark:bg-gray-600">
                               <tr>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  Image
+                                </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   Code
                                 </th>
@@ -947,8 +952,8 @@ const Documents: React.FC = () => {
                 </div>
               )}
 
-              {/* Items Table - Only for manual documents or when creating */}
-              {(!editingDocument || !['supplier_purchase_order', 'customer_sales_order', 'delivery_note', 'invoice'].includes(formData.type)) && (
+              {/* Items Table - allow editing items for delivery_note and invoice same as customer_sales_order */}
+              {(!editingDocument || !['supplier_purchase_order'].includes(formData.type)) && (
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-lg font-medium text-gray-900 dark:text-white">Articles</h4>
@@ -1075,15 +1080,15 @@ const Documents: React.FC = () => {
                 </div>
               )}
 
-              {/* Information for automatic documents */}
-              {editingDocument && ['supplier_purchase_order', 'customer_sales_order', 'delivery_note', 'invoice'].includes(formData.type) && (
+              {/* Information for automatic documents - keep for supplier_purchase_order only */}
+              {editingDocument && ['supplier_purchase_order'].includes(formData.type) && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                   <div className="flex items-center text-blue-800 dark:text-blue-200">
                     <FileText className="w-4 h-4 mr-2" />
                     <span className="text-sm font-medium">Document automatique</span>
                   </div>
                   <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                    Ce document a été généré automatiquement par le workflow. Vous pouvez modifier le statut et les notes, mais les articles ne peuvent pas être modifiés.
+                    Ce document a été généré automatiquement par le workflow.
                   </p>
                 </div>
               )}
@@ -1767,15 +1772,27 @@ const Documents: React.FC = () => {
                                       </tr>
                                     </thead>
                                     <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
-                                      {viewingDocument.items.map((item, index) => (
+                                      {viewingDocument.items.map((item, index) => {
+                                        const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
+                                        const byCode = catalog.find(p => String(p.code || '').toLowerCase() === String(item.code || '').toLowerCase());
+                                        const byName = catalog.find(p => String(p.name || '').toLowerCase() === String(item.description || '').toLowerCase());
+                                        const prod = byCode || byName;
+                                        return (
                                         <tr key={index}>
+                                          <td className="px-3 py-2">
+                                            {prod?.image ? (
+                                              <img src={prod.image} alt={prod.name} className="h-10 w-10 object-cover rounded border border-gray-200 dark:border-gray-600" />
+                                            ) : (
+                                              <div className="h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600" />
+                                            )}
+                                          </td>
                                           <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.code}</td>
                                           <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.description}</td>
                                           <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.quantity} {item.unit}</td>
                                           <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
                                           <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{item.total.toLocaleString()} DH</td>
                                         </tr>
-                                      ))}
+                                      );})}
                                     </tbody>
                                   </table>
                                 </div>

@@ -19,7 +19,7 @@ const requireAdmin = (req, res, next) => {
 router.get('/', auth, requireAdmin, async (req, res) => {
   try {
     const users = await User.findAll({
-      attributes: ['id', 'username', 'email', 'role', 'isActive', 'lastLogin', 'createdAt'],
+      attributes: ['id', 'username', 'email', 'role', 'isActive', 'permissions', 'lastLogin', 'createdAt'],
       order: [['createdAt', 'DESC']]
     });
 
@@ -35,7 +35,7 @@ router.post('/', auth, requireAdmin, [
   body('username').isLength({ min: 3 }).withMessage('Le nom d\'utilisateur doit contenir au moins 3 caractères'),
   body('email').isEmail().withMessage('Veuillez fournir un email valide'),
   body('password').isLength({ min: 6 }).withMessage('Le mot de passe doit contenir au moins 6 caractères'),
-  body('role').isIn(['admin', 'manager', 'cashier']).withMessage('Le rôle doit être admin, manager ou cashier')
+  body('role').isIn(['admin', 'manager']).withMessage('Le rôle doit être admin ou manager')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -43,7 +43,7 @@ router.post('/', auth, requireAdmin, [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password, role } = req.body;
+    const { username, email, password, role, permissions } = req.body;
 
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await User.findOne({
@@ -61,8 +61,18 @@ router.post('/', auth, requireAdmin, [
       username,
       email,
       password,
-      role: role || 'cashier',
-      isActive: true
+      role: role || 'manager',
+      isActive: true,
+      permissions: permissions || {
+        canAccessInventory: true,
+        canAccessSuppliers: true,
+        canAccessClients: true,
+        canAccessDocuments: true,
+        canAccessWaiting: true,
+        canAccessReports: true,
+        canAccessSettings: true,
+        canManageUsers: false
+      }
     });
 
     res.status(201).json({
@@ -71,6 +81,7 @@ router.post('/', auth, requireAdmin, [
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      permissions: user.permissions,
       createdAt: user.createdAt
     });
   } catch (error) {
@@ -84,7 +95,7 @@ router.put('/:id', auth, requireAdmin, [
   body('username').optional().isLength({ min: 3 }).withMessage('Le nom d\'utilisateur doit contenir au moins 3 caractères'),
   body('email').optional().isEmail().withMessage('Veuillez fournir un email valide'),
   body('password').optional().isLength({ min: 6 }).withMessage('Le mot de passe doit contenir au moins 6 caractères'),
-  body('role').optional().isIn(['admin', 'manager', 'cashier']).withMessage('Le rôle doit être admin, manager ou cashier'),
+  body('role').optional().isIn(['admin', 'manager']).withMessage('Le rôle doit être admin ou manager'),
   body('isActive').optional().isBoolean().withMessage('Le statut doit être un booléen')
 ], async (req, res) => {
   try {
@@ -94,7 +105,7 @@ router.put('/:id', auth, requireAdmin, [
     }
 
     const { id } = req.params;
-    const { username, email, password, role, isActive } = req.body;
+    const { username, email, password, role, isActive, permissions } = req.body;
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -124,6 +135,7 @@ router.put('/:id', auth, requireAdmin, [
     if (email) updateData.email = email;
     if (role) updateData.role = role;
     if (typeof isActive === 'boolean') updateData.isActive = isActive;
+    if (permissions) updateData.permissions = permissions;
 
     // Si un nouveau mot de passe est fourni, le hasher
     if (password) {
@@ -139,6 +151,7 @@ router.put('/:id', auth, requireAdmin, [
       email: user.email,
       role: user.role,
       isActive: user.isActive,
+      permissions: user.permissions,
       lastLogin: user.lastLogin,
       createdAt: user.createdAt
     });
@@ -178,7 +191,7 @@ router.get('/:id', auth, requireAdmin, async (req, res) => {
     const { id } = req.params;
 
     const user = await User.findByPk(id, {
-      attributes: ['id', 'username', 'email', 'role', 'isActive', 'lastLogin', 'createdAt']
+      attributes: ['id', 'username', 'email', 'role', 'isActive', 'permissions', 'lastLogin', 'createdAt']
     });
 
     if (!user) {

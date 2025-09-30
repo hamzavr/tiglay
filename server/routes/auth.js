@@ -35,7 +35,7 @@ router.post('/register', [
       username,
       email,
       password,
-      role: role || 'cashier'
+      role: role || 'manager'
     });
 
     const token = jwt.sign(
@@ -50,7 +50,8 @@ router.post('/register', [
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        permissions: user.permissions
       }
     });
   } catch (error) {
@@ -97,7 +98,8 @@ router.post('/login', [
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        permissions: user.permissions
       }
     });
   } catch (error) {
@@ -114,7 +116,8 @@ router.get('/me', auth, async (req, res) => {
         id: req.user.id,
         username: req.user.username,
         email: req.user.email,
-        role: req.user.role
+        role: req.user.role,
+        permissions: req.user.permissions
       }
     });
   } catch (error) {

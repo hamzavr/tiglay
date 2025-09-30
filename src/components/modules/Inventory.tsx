@@ -32,7 +32,6 @@ interface Product {
 
 interface ProductFormData {
   name: string;
-  nameAr: string;
   code: string;
   description: string;
   category: string;
@@ -43,6 +42,7 @@ interface ProductFormData {
   minStock: number;
   expiryDate: string;
   location: string;
+  image?: string;
 }
 
 const Inventory: React.FC = () => {
@@ -53,7 +53,6 @@ const Inventory: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
-    nameAr: '',
     code: '',
     description: '',
     category: '',
@@ -63,7 +62,8 @@ const Inventory: React.FC = () => {
     stock: 0,
     minStock: 5,
     expiryDate: '',
-    location: ''
+    location: '',
+    image: ''
   });
 
   const { data: products = [], loading: productsLoading, execute: fetchProducts } = useApi(productsAPI.getAll);
@@ -85,7 +85,6 @@ const Inventory: React.FC = () => {
         // Pré-remplir le formulaire avec les données
         setFormData({
           name: productData.name || '',
-          nameAr: '',
           code: productData.code || '',
           description: '',
           category: productData.category || 'Autre',
@@ -95,7 +94,8 @@ const Inventory: React.FC = () => {
           stock: productData.quantity || 0,
           minStock: 5,
           expiryDate: '',
-          location: ''
+          location: '',
+          image: ''
         });
         
         // Ouvrir automatiquement le modal d'ajout
@@ -121,7 +121,6 @@ const Inventory: React.FC = () => {
       // Pré-remplir le formulaire avec les données
       setFormData({
         name: productData.name || '',
-        nameAr: '',
         code: productData.code || '',
         description: '',
         category: productData.category || 'Autre',
@@ -131,7 +130,8 @@ const Inventory: React.FC = () => {
         stock: productData.quantity || 0,
         minStock: 5,
         expiryDate: '',
-        location: ''
+        location: '',
+        image: ''
       });
       
       // Ouvrir automatiquement le modal d'ajout
@@ -170,7 +170,6 @@ const Inventory: React.FC = () => {
     setEditingProduct(null);
     setFormData({
       name: '',
-      nameAr: '',
       code: '',
       description: '',
       category: '',
@@ -180,7 +179,8 @@ const Inventory: React.FC = () => {
       stock: 0,
       minStock: 5,
       expiryDate: '',
-      location: ''
+      location: '',
+      image: ''
     });
     setIsModalOpen(true);
   };
@@ -189,7 +189,6 @@ const Inventory: React.FC = () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
-      nameAr: product.nameAr || '',
       code: product.code,
       description: product.description || '',
       category: product.category,
@@ -199,7 +198,8 @@ const Inventory: React.FC = () => {
       stock: product.stock,
       minStock: product.minStock,
       expiryDate: product.expiryDate || '',
-      location: product.location || ''
+      location: product.location || '',
+      image: product.image || ''
     });
     setIsModalOpen(true);
   };
@@ -209,7 +209,6 @@ const Inventory: React.FC = () => {
     setEditingProduct(null);
     setFormData({
       name: '',
-      nameAr: '',
       code: '',
       description: '',
       category: '',
@@ -219,7 +218,8 @@ const Inventory: React.FC = () => {
       stock: 0,
       minStock: 5,
       expiryDate: '',
-      location: ''
+      location: '',
+      image: ''
     });
   };
 
@@ -464,17 +464,31 @@ const Inventory: React.FC = () => {
                   />
                 </div>
 
+                {/* Champ image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nom en Arabe
+                    Image
                   </label>
                   <input
-                    type="text"
-                    value={formData.nameAr}
-                    onChange={(e) => handleInputChange('nameAr', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="اسم المنتج"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files && e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const base64 = String(reader.result || '');
+                        handleInputChange('image', base64);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
+                  {formData.image && (
+                    <div className="mt-2">
+                      <img src={formData.image} alt="Aperçu" className="h-24 w-24 object-cover rounded border border-gray-200 dark:border-gray-600" />
+                    </div>
+                  )}
                 </div>
 
                 <div>

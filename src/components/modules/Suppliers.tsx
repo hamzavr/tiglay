@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Phone, Mail, MapPin, Building2, X, FileText, Plus as PlusIcon, Trash2 as TrashIcon } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApi } from '../../hooks/useApi';
-import { suppliersAPI } from '../../services/api';
+import { suppliersAPI, productsAPI } from '../../services/api';
 import documentWorkflowService from '../../services/documentWorkflow';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -77,12 +77,15 @@ const Suppliers: React.FC = () => {
   });
 
   const { data: suppliers = [], loading: suppliersLoading, execute: fetchSuppliers } = useApi(suppliersAPI.getAll);
+  const { data: productCatalog = [], execute: fetchProducts } = useApi(productsAPI.getAll);
   const { execute: createSupplier } = useApi(suppliersAPI.create);
   const { execute: updateSupplier } = useApi(suppliersAPI.update);
   const { execute: deleteSupplier } = useApi(suppliersAPI.delete);
 
   useEffect(() => {
     fetchSuppliers({ search: searchTerm });
+    // Charger le catalogue produits pour suggestions
+    fetchProducts({});
   }, [searchTerm]);
 
   // Ensure suppliers is always an array
@@ -252,28 +255,13 @@ const Suppliers: React.FC = () => {
     return itemsTotal + newProductsTotal;
   };
 
-  // Suggestions de matériaux de construction
-  const constructionMaterials = [
-    'Ciment Portland', 'Ciment gris', 'Ciment blanc', 'Ciment prompt',
-    'Briques rouges', 'Briques creuses', 'Briques pleines', 'Briques réfractaires',
-    'Sable fin', 'Sable grossier', 'Sable de rivière', 'Sable de carrière',
-    'Gravier 3/8', 'Gravier 6/12', 'Gravier 12/20', 'Gravier 20/40',
-    'Fer à béton 6mm', 'Fer à béton 8mm', 'Fer à béton 10mm', 'Fer à béton 12mm',
-    'Trellis soudé', 'Grillage soudé', 'Fils de fer', 'Clous',
-    'Béton prêt à l\'emploi', 'Mortier', 'Enduit', 'Plâtre',
-    'Carrelage', 'Faïence', 'Mosaïque', 'Pavé',
-    'Tuiles', 'Ardoises', 'Tôles ondulées', 'Bardage',
-    'Isolant thermique', 'Isolant phonique', 'Laine de verre', 'Polystyrène',
-    'Peinture', 'Primaire', 'Sous-couche', 'Vernis',
-    'Porte', 'Fenêtre', 'Volets', 'Persiennes',
-    'Électricité', 'Câbles', 'Interrupteurs', 'Prises',
-    'Plomberie', 'Tuyaux', 'Robinetterie', 'Éviers'
-  ];
-
-  const getFilteredMaterials = (searchTerm: string) => {
-    return constructionMaterials.filter(material =>
-      material.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // Suggestions depuis l'inventaire
+  const getFilteredProductsByName = (term: string) => {
+    const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
+    const lower = String(term || '').toLowerCase();
+    return catalog
+      .filter(p => String(p.name || '').toLowerCase().includes(lower))
+      .slice(0, 8);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -666,25 +654,27 @@ const Suppliers: React.FC = () => {
                                   <td className="px-3 py-2">
                                     <div className="relative">
                                       <input
+                                        list={`supplier-order-product-suggestions-${item.id}`}
                                         type="text"
                                         value={item.name}
-                                        onChange={(e) => updateOrderItem(item.id, 'name', e.target.value)}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          updateOrderItem(item.id, 'name', val);
+                                          // si on trouve un produit exact, pré-remplir code/prix
+                                          const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
+                                          const found = catalog.find(p => String(p.name || '').toLowerCase() === String(val || '').toLowerCase());
+                                          if (found) {
+                                            updateOrderItem(item.id, 'unitPrice', Number(found.buyPrice) || item.unitPrice);
+                                          }
+                                        }}
                                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                         placeholder="Nom du produit"
                                       />
-                                      {item.name && getFilteredMaterials(item.name).length > 0 && (
-                                        <div className="absolute z-10 w-full bottom-full mb-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
-                                          {getFilteredMaterials(item.name).slice(0, 5).map((material, idx) => (
-                                            <div
-                                              key={idx}
-                                              className="px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
-                                              onClick={() => updateOrderItem(item.id, 'name', material)}
-                                            >
-                                              {material}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
+                                      <datalist id={`supplier-order-product-suggestions-${item.id}`}>
+                                        {(getFilteredProductsByName(item.name)).map((p: any) => (
+                                          <option key={p.id} value={p.name} />
+                                        ))}
+                                      </datalist>
                                     </div>
                                   </td>
                                   <td className="px-3 py-2">
@@ -804,26 +794,29 @@ const Suppliers: React.FC = () => {
                                   <td className="px-3 py-2">
                                     <div className="relative">
                                       <input
+                                        list={`supplier-new-product-suggestions-${item.id}`}
                                         type="text"
                                         value={item.name}
-                                        onChange={(e) => updateNewProductItem(item.id, 'name', e.target.value)}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          updateNewProductItem(item.id, 'name', val);
+                                          const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
+                                          const found = catalog.find(p => String(p.name || '').toLowerCase() === String(val || '').toLowerCase());
+                                          if (found) {
+                                            updateNewProductItem(item.id, 'code', found.code || item.code);
+                                            updateNewProductItem(item.id, 'unitPrice', Number(found.buyPrice) || item.unitPrice);
+                                            updateNewProductItem(item.id, 'category', found.category || item.category);
+                                          }
+                                        }}
                                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                         placeholder="Nom du produit"
                                         required
                                       />
-                                      {item.name && getFilteredMaterials(item.name).length > 0 && (
-                                        <div className="absolute z-10 w-full bottom-full mb-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg">
-                                          {getFilteredMaterials(item.name).slice(0, 5).map((material, idx) => (
-                                            <div
-                                              key={idx}
-                                              className="px-3 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer"
-                                              onClick={() => updateNewProductItem(item.id, 'name', material)}
-                                            >
-                                              {material}
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
+                                      <datalist id={`supplier-new-product-suggestions-${item.id}`}>
+                                        {(getFilteredProductsByName(item.name)).map((p: any) => (
+                                          <option key={p.id} value={p.name} />
+                                        ))}
+                                      </datalist>
                                     </div>
                                   </td>
                                   <td className="px-3 py-2">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Lock, Shield } from 'lucide-react';
+import { X, User, Mail, Lock, Shield, Settings } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { User as UserType, CreateUserData, UpdateUserData } from '../../types';
+import { User as UserType, CreateUserData, UpdateUserData, UserPermissions, ROLE_PERMISSIONS } from '../../types';
 import Button from '../ui/Button';
 
 interface UserManagementModalProps {
@@ -24,8 +24,18 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
     username: '',
     email: '',
     password: '',
-    role: 'cashier' as 'admin' | 'manager' | 'cashier',
-    isActive: true
+    role: 'manager' as 'admin' | 'manager',
+    isActive: true,
+    permissions: {
+      canAccessInventory: true,
+      canAccessSuppliers: true,
+      canAccessClients: true,
+      canAccessDocuments: true,
+      canAccessWaiting: true,
+      canAccessReports: true,
+      canAccessSettings: true,
+      canManageUsers: false,
+    } as UserPermissions
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,15 +47,17 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
         email: editingUser.email,
         password: '', // Ne pas pré-remplir le mot de passe
         role: editingUser.role,
-        isActive: editingUser.isActive
+        isActive: editingUser.isActive,
+        permissions: editingUser.permissions || ROLE_PERMISSIONS[editingUser.role]
       });
     } else {
       setFormData({
         username: '',
         email: '',
         password: '',
-        role: 'cashier',
-        isActive: true
+        role: 'manager',
+        isActive: true,
+        permissions: ROLE_PERMISSIONS.manager
       });
     }
     setErrors({});
@@ -86,7 +98,8 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           username: formData.username,
           email: formData.email,
           password: formData.password,
-          role: formData.role
+          role: formData.role,
+          permissions: formData.permissions
         });
       } else {
         await onSave({
@@ -95,6 +108,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           email: formData.email,
           role: formData.role,
           isActive: formData.isActive,
+          permissions: formData.permissions,
           ...(formData.password && { password: formData.password })
         });
       }
@@ -106,11 +120,21 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handlePermissionChange = (permission: keyof UserPermissions, value: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [permission]: value
+      }
+    }));
   };
 
   if (!isOpen) return null;
@@ -203,7 +227,6 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
               onChange={(e) => handleInputChange('role', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="cashier">Caissier</option>
               <option value="manager">Manager</option>
               <option value="admin">Administrateur</option>
             </select>
@@ -223,6 +246,83 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                 <option value="active">Actif</option>
                 <option value="inactive">Inactif</option>
               </select>
+            </div>
+          )}
+
+          {/* Permissions (seulement pour les managers en mode édition) */}
+          {mode === 'edit' && formData.role === 'manager' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <Settings className="w-4 h-4 inline mr-2" />
+                Permissions d'accès
+              </label>
+              <div className="space-y-3 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessInventory}
+                      onChange={(e) => handlePermissionChange('canAccessInventory', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Inventaire</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessSuppliers}
+                      onChange={(e) => handlePermissionChange('canAccessSuppliers', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Fournisseurs</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessClients}
+                      onChange={(e) => handlePermissionChange('canAccessClients', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Clients</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessDocuments}
+                      onChange={(e) => handlePermissionChange('canAccessDocuments', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Documents</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessWaiting}
+                      onChange={(e) => handlePermissionChange('canAccessWaiting', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Liste d'attente</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessReports}
+                      onChange={(e) => handlePermissionChange('canAccessReports', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Rapports</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.permissions.canAccessSettings}
+                      onChange={(e) => handlePermissionChange('canAccessSettings', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Paramètres</span>
+                  </label>
+                </div>
+              </div>
             </div>
           )}
 

@@ -2,26 +2,29 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: 'admin' | 'manager' | 'cashier';
+  role: 'admin' | 'manager';
   createdAt?: string;
   lastLogin?: string;
   isActive: boolean;
+  permissions?: UserPermissions;
 }
 
 export interface CreateUserData {
   username: string;
   email: string;
   password: string;
-  role: 'admin' | 'manager' | 'cashier';
+  role: 'admin' | 'manager';
+  permissions?: UserPermissions;
 }
 
 export interface UpdateUserData {
   id: string;
   username?: string;
   email?: string;
-  role?: 'admin' | 'manager' | 'cashier';
+  role?: 'admin' | 'manager';
   isActive?: boolean;
   password?: string;
+  permissions?: UserPermissions;
 }
 
 export interface UserPermissions {
@@ -54,16 +57,6 @@ export const ROLE_PERMISSIONS: Record<string, UserPermissions> = {
     canAccessWaiting: true,
     canAccessReports: true,
     canAccessSettings: true,
-    canManageUsers: false,
-  },
-  cashier: {
-    canAccessInventory: false,
-    canAccessSuppliers: false,
-    canAccessClients: true,
-    canAccessDocuments: true,
-    canAccessWaiting: true,
-    canAccessReports: false,
-    canAccessSettings: false,
     canManageUsers: false,
   },
 };

@@ -102,6 +102,7 @@ router.post('/', [auth, authorize('admin', 'manager')], [
         minStock: payload.minStock ?? existing.minStock,
         expiryDate: payload.expiryDate ?? existing.expiryDate,
         location: payload.location ?? existing.location,
+        image: payload.image ?? existing.image,
         isActive: true
       });
       return res.json(existing);

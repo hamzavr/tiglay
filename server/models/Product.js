@@ -64,7 +64,7 @@ const Product = sequelize.define('Product', {
     defaultValue: 0
   },
   image: {
-    type: DataTypes.STRING
+    type: DataTypes.TEXT
   },
   location: {
     type: DataTypes.STRING

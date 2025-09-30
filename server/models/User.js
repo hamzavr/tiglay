@@ -26,8 +26,8 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('admin', 'manager', 'cashier'),
-    defaultValue: 'cashier'
+    type: DataTypes.ENUM('admin', 'manager'),
+    defaultValue: 'manager'
   },
   isActive: {
     type: DataTypes.BOOLEAN,
@@ -35,6 +35,19 @@ const User = sequelize.define('User', {
   },
   lastLogin: {
     type: DataTypes.DATE
+  },
+  permissions: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      canAccessInventory: true,
+      canAccessSuppliers: true,
+      canAccessClients: true,
+      canAccessDocuments: true,
+      canAccessWaiting: true,
+      canAccessReports: true,
+      canAccessSettings: true,
+      canManageUsers: false
+    }
   }
 }, {
   hooks: {
