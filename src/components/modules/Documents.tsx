@@ -857,97 +857,6 @@ const Documents: React.FC = () => {
                       </div>
                     </div>
                     
-                    {formData.items && formData.items.length > 0 && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Produits vendus
-                        </label>
-                        <div className="overflow-x-auto">
-                          <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
-                            <thead className="bg-gray-100 dark:bg-gray-600">
-                              <tr>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Image
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Code
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Nom
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Quantité
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Prix unitaire
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Total
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
-                              {formData.items.map((item, index) => (
-                                <tr key={index}>
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="text"
-                                      value={item.code}
-                                      onChange={(e) => updateDocumentItem(item.id, 'code', e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="text"
-                                      value={item.description}
-                                      onChange={(e) => updateDocumentItem(item.id, 'description', e.target.value)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="number"
-                                      value={item.quantity}
-                                      onChange={(e) => updateDocumentItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                      min="1"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="number"
-                                      value={item.unitPrice}
-                                      onChange={(e) => updateDocumentItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                      min="0"
-                                      step="0.01"
-                                    />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                      {item.total.toLocaleString()} DH
-                                    </div>
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => removeDocumentItem(item.id)}
-                                      className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-                                    >
-                                      Supprimer
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -957,19 +866,24 @@ const Documents: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-lg font-medium text-gray-900 dark:text-white">Articles</h4>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={<Plus className="w-4 h-4" />}
-                      onClick={addDocumentItem}
-                    >
-                      Ajouter un article
-                    </Button>
+                    {!['customer_sales_order', 'delivery_note', 'invoice'].includes(formData.type) && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<Plus className="w-4 h-4" />}
+                        onClick={addDocumentItem}
+                      >
+                        Ajouter un article
+                      </Button>
+                    )}
                   </div>
 
                 {formData.items.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    Aucun article ajouté. Cliquez sur "Ajouter un article" pour commencer.
+                    {['customer_sales_order', 'delivery_note', 'invoice'].includes(formData.type)
+                      ? 'Aucun article dans ce document.' 
+                      : 'Aucun article ajouté. Cliquez sur "Ajouter un article" pour commencer.'
+                    }
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -1594,6 +1508,11 @@ const Documents: React.FC = () => {
                     <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
+                          {viewingDocument.type === 'delivery_note' && (
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Image
+                            </th>
+                          )}
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             Code
                           </th>
@@ -1615,16 +1534,37 @@ const Documents: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
-                        {viewingDocument.items.map((item, index) => (
-                          <tr key={index}>
-                            <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.code}</td>
-                            <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.description}</td>
-                            <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.quantity}</td>
-                            <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.unit}</td>
-                            <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
-                            <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{item.total.toLocaleString()} DH</td>
-                          </tr>
-                        ))}
+                        {viewingDocument.items.map((item, index) => {
+                          // Pour les delivery_note, on cherche l'image du produit
+                          let productImage = null;
+                          if (viewingDocument.type === 'delivery_note') {
+                            const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
+                            const byCode = catalog.find(p => String(p.code || '').toLowerCase() === String(item.code || '').toLowerCase());
+                            const byName = catalog.find(p => String(p.name || '').toLowerCase() === String(item.description || '').toLowerCase());
+                            const prod = byCode || byName;
+                            productImage = prod?.image;
+                          }
+                          
+                          return (
+                            <tr key={index}>
+                              {viewingDocument.type === 'delivery_note' && (
+                                <td className="px-3 py-2">
+                                  {productImage ? (
+                                    <img src={productImage} alt={item.description} className="h-10 w-10 object-cover rounded border border-gray-200 dark:border-gray-600" />
+                                  ) : (
+                                    <div className="h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600" />
+                                  )}
+                                </td>
+                              )}
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.code}</td>
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.description}</td>
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.quantity}</td>
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.unit}</td>
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
+                              <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{item.total.toLocaleString()} DH</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1754,6 +1694,9 @@ const Documents: React.FC = () => {
                                   <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
                                     <thead className="bg-gray-100 dark:bg-gray-600">
                                       <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                          Image
+                                        </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                           Code
                                         </th>
