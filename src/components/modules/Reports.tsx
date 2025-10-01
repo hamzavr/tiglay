@@ -288,7 +288,7 @@ const Reports: React.FC = () => {
         </Card>
 
         {/* Produits en rupture de stock */}
-        <Card title="Produits en rupture de stock">
+        <Card title={t('lowStockProducts')}>
           <div className="space-y-4">
             {lowStockProducts.length > 0 ? (
               lowStockProducts.map((product, index) => (
@@ -299,18 +299,18 @@ const Reports: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{product.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Stock: {product.stock}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('stock')}: {product.stock}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">Stock bas</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Min: {product.minStock}</p>
+                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{t('lowStock')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('min')}: {product.minStock}</p>
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">Tous les stocks sont corrects</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('allStocksCorrect')}</p>
               </div>
             )}
           </div>
@@ -320,7 +320,7 @@ const Reports: React.FC = () => {
       {/* Additional Reports */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Clients avec crédit élevé */}
-        <Card title="Clients avec crédit élevé">
+        <Card title={t('clientsWithHighCredit')}>
           <div className="space-y-4">
             {clientsWithHighCredit.length > 0 ? (
               clientsWithHighCredit.map((client, index) => (
@@ -331,25 +331,25 @@ const Reports: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{client.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Achats: {client.totalPurchases.toLocaleString()} DH</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('purchases')}: {client.totalPurchases.toLocaleString()} DH</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-red-600 dark:text-red-400">{client.creditBalance.toLocaleString()} DH</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Crédit</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('credit')}</p>
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">Aucun client avec crédit élevé</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('noClientsWithHighCredit')}</p>
               </div>
             )}
           </div>
         </Card>
 
         {/* Évolution mensuelle */}
-        <Card title="Évolution mensuelle">
+        <Card title={t('monthlyEvolution')}>
           <div className="space-y-4">
             {monthlyData.map((month, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">

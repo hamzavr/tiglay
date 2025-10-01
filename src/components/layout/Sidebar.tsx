@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'suppliers', label: t('suppliers'), icon: Users, permission: 'canAccessSuppliers' },
     { id: 'clients', label: t('clients'), icon: UserCheck, permission: 'canAccessClients' },
     { id: 'documents', label: t('documents'), icon: FileText, permission: 'canAccessDocuments' },
-    { id: 'waiting', label: 'Liste d\'attente', icon: Clock, permission: 'canAccessWaiting' },
+    { id: 'waiting', label: t('waitingList'), icon: Clock, permission: 'canAccessWaiting' },
     { id: 'reports', label: t('reports'), icon: BarChart3, permission: 'canAccessReports' },
     { id: 'settings', label: t('settings'), icon: Settings, permission: 'canAccessSettings' }
   ];

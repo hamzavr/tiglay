@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type WaitingFlag = 'normal' | 'missing' | 'surplus';
 
@@ -17,6 +18,7 @@ interface WaitingItem {
 }
 
 const WaitingList: React.FC = () => {
+  const { t } = useLanguage();
   const [items, setItems] = useState<WaitingItem[]>([]);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ const WaitingList: React.FC = () => {
   };
 
   const clearAll = () => {
-    if (confirm('Vider toute la liste d’attente ?')) {
+    if (confirm(t('confirmClearWaitingList'))) {
       persist([]);
     }
   };
@@ -50,35 +52,35 @@ const WaitingList: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Liste d’attente des produits</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('waitingListTitle')}</h2>
         <div className="flex items-center gap-3">
           <div className="text-sm text-gray-700 dark:text-gray-300">
-            Total: <span className="font-semibold">{totalAmount.toLocaleString()} DH</span>
+            {t('total')}: <span className="font-semibold">{totalAmount.toLocaleString()} DH</span>
           </div>
-          <button onClick={clearAll} className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded">Vider</button>
+          <button onClick={clearAll} className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded">{t('clear')}</button>
         </div>
       </div>
 
       {items.length === 0 ? (
         <div className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-600 dark:text-gray-300">
-          Aucun produit dans la liste d’attente pour le moment.
+          {t('noProductsInWaitingList')}
         </div>
       ) : (
         <div className="overflow-x-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
               <tr>
-                <th className="text-left px-4 py-2">Nom</th>
-                <th className="text-left px-4 py-2">Code</th>
-                <th className="text-left px-4 py-2">Catégorie</th>
-                <th className="text-left px-4 py-2">État quantité</th>
-                <th className="text-left px-4 py-2">Quantité manquante</th>
-                <th className="text-left px-4 py-2">Quantité surplus</th>
-                <th className="text-left px-4 py-2">Unité</th>
-                <th className="text-left px-4 py-2">Prix unitaire</th>
-                <th className="text-left px-4 py-2">Total</th>
-                <th className="text-left px-4 py-2">Quantité</th>
-                <th className="text-left px-4 py-2">Actions</th>
+                <th className="text-left px-4 py-2">{t('name')}</th>
+                <th className="text-left px-4 py-2">{t('code')}</th>
+                <th className="text-left px-4 py-2">{t('category')}</th>
+                <th className="text-left px-4 py-2">{t('stateQuantity')}</th>
+                <th className="text-left px-4 py-2">{t('missingQuantity')}</th>
+                <th className="text-left px-4 py-2">{t('surplusQuantity')}</th>
+                <th className="text-left px-4 py-2">{t('unit')}</th>
+                <th className="text-left px-4 py-2">{t('unitPrice')}</th>
+                <th className="text-left px-4 py-2">{t('totalPrice')}</th>
+                <th className="text-left px-4 py-2">{t('quantity')}</th>
+                <th className="text-left px-4 py-2">{t('actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -111,7 +113,7 @@ const WaitingList: React.FC = () => {
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{(item.quantity * item.unitPrice).toLocaleString()} DH</td>
                   <td className="px-4 py-2">
                     <span className={`px-2 py-1 text-xs rounded-full ${item.flag === 'missing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : item.flag === 'surplus' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'}`}>
-                      {item.flag === 'missing' ? 'Manquante' : item.flag === 'surplus' ? 'Surplus' : 'Normale'}
+                      {item.flag === 'missing' ? t('missing') : item.flag === 'surplus' ? t('surplus') : t('normal')}
                     </span>
                   </td>
                   <td className="px-4 py-2">
@@ -120,14 +122,14 @@ const WaitingList: React.FC = () => {
                         onClick={() => {
                           // Vérifier si le produit a une quantité manquante
                           if (item.missingQuantity && item.missingQuantity > 0) {
-                            alert('Ce produit ne peut pas être ajouté à l\'inventaire car il a une quantité manquante. Veuillez d\'abord résoudre le problème de quantité manquante.');
+                            alert(t('cannotAddToInventoryMissing'));
                             return;
                           }
                           
                           // Pour les produits avec quantité surplus, on ajoute seulement la quantité normale
                           // et on garde la quantité surplus dans la liste d'attente
                           if (item.surplusQuantity && item.surplusQuantity > 0) {
-                            const confirmAdd = confirm(`Ce produit a une quantité surplus de ${item.surplusQuantity}. Voulez-vous ajouter seulement la quantité normale (${item.quantity}) à l'inventaire ? La quantité surplus restera dans la liste d'attente.`);
+                            const confirmAdd = confirm(t('confirmAddNormalQuantity').replace('{surplusQuantity}', item.surplusQuantity.toString()).replace('{quantity}', item.quantity.toString()));
                             if (!confirmAdd) return;
                           }
                           
@@ -154,9 +156,9 @@ const WaitingList: React.FC = () => {
                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                         }`}
                       >
-                        {item.surplusQuantity && item.surplusQuantity > 0 ? 'Ajouter quantité normale' : 'Ajouter à l\'inventaire'}
+                        {item.surplusQuantity && item.surplusQuantity > 0 ? t('addNormalQuantity') : t('addToInventory')}
                       </button>
-                      <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">Supprimer</button>
+                      <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">{t('remove')}</button>
                     </div>
                   </td>
                 </tr>

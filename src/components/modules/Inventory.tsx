@@ -381,10 +381,10 @@ const Inventory: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Code</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('code')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('name')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('category')}</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">État quantité</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('stateQuantity')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('buyPrice')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('sellPrice')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('expiration')}</th>

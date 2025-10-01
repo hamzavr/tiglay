@@ -500,11 +500,6 @@ const Documents: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('documents')}</h2>
           <p className="text-gray-600 dark:text-gray-400">{t('manageAllDocuments')}</p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={openAddModal}>
-            {t('newDocument')}
-          </Button>
-        </div>
       </div>
 
       {/* Stats */}
@@ -743,12 +738,12 @@ const Documents: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingDocument ? 'Modifier le document' : 'Nouveau document'}
+                {editingDocument ? t('modifyDocument') : t('newDocument')}
               </h3>
               <button
                 onClick={closeModal}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                title="Fermer"
+                title={t('close')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -759,9 +754,9 @@ const Documents: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Type de document *
+                    {t('documentType')} *
                     {editingDocument && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(non modifiable)</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({t('notModifiable')})</span>
                     )}
                   </label>
                   <select
@@ -773,10 +768,10 @@ const Documents: React.FC = () => {
                         : 'bg-white dark:bg-gray-700'
                     }`}
                     required
-                    title="Type de document"
+                    title={t('documentType')}
                     disabled={editingDocument ? true : false}
                   >
-                    <option value="">Sélectionner un type</option>
+                    <option value="">{t('selectType')}</option>
                     {Object.entries(editingDocument ? allDocumentTypes : manualDocumentTypes).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
@@ -785,24 +780,24 @@ const Documents: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Statut
+                    {t('status')}
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    title="Statut du document"
+                    title={t('documentStatus')}
                   >
-                    <option value="draft">Brouillon</option>
-                    <option value="sent">Envoyé</option>
-                    <option value="paid">Payé</option>
-                    <option value="cancelled">Annulé</option>
+                    <option value="draft">{t('draft')}</option>
+                    <option value="sent">{t('sent')}</option>
+                    <option value="paid">{t('paid')}</option>
+                    <option value="cancelled">{t('cancelled')}</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Montant total
+                    {t('totalAmount')}
                   </label>
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {formData.type === 'supplier_purchase_order' ? getSupplierOrderTotal().toLocaleString() : getFormTotal().toLocaleString()} DH
@@ -815,15 +810,15 @@ const Documents: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Client
+                      {t('client')}
                     </label>
                     <select
                       value={formData.clientId || ''}
                       onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      title="Sélectionner un client"
+                      title={t('selectClient')}
                     >
-                      <option value="">Sélectionner un client</option>
+                      <option value="">{t('selectClient')}</option>
                       {(clients || []).map((client: Client) => (
                         <option key={client.id} value={client.id}>{client.name}</option>
                       ))}
@@ -1007,10 +1002,10 @@ const Documents: React.FC = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                   <div className="flex items-center text-blue-800 dark:text-blue-200">
                     <FileText className="w-4 h-4 mr-2" />
-                    <span className="text-sm font-medium">Document automatique</span>
+                    <span className="text-sm font-medium">{t('automaticDocument')}</span>
                   </div>
                   <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                    Ce document a été généré automatiquement par le workflow.
+                    {t('documentGeneratedByWorkflow')}
                   </p>
                 </div>
               )}
@@ -1018,7 +1013,7 @@ const Documents: React.FC = () => {
               {/* Supplier Order Details for editing supplier_purchase_order */}
               {editingDocument && formData.type === 'supplier_purchase_order' && formData.notes ? (
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande fournisseur</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">{t('supplierOrderDetails')}</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
                     {(() => {
                       const notes = formData.notes;
@@ -1038,7 +1033,7 @@ const Documents: React.FC = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Date de livraison souhaitée
+                                {t('desiredDeliveryDate')}
                               </label>
                               <input
                                 type="date"
@@ -1055,7 +1050,7 @@ const Documents: React.FC = () => {
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Total
+                                {t('total')}
                               </label>
                               <div className="text-lg font-bold text-green-600 dark:text-green-400">
                                 {getSupplierOrderTotal().toLocaleString()} DH
@@ -1066,7 +1061,7 @@ const Documents: React.FC = () => {
                           {products.length > 0 && (
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Produits commandés
+                                {t('orderedProducts')}
                               </label>
                               <div className="space-y-2">
                                 {products.map((product, index) => {
@@ -1090,7 +1085,7 @@ const Documents: React.FC = () => {
                                   return (
                                     <div key={index} className="grid grid-cols-1 md:grid-cols-8 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Nom/Code</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('nameCode')}</label>
                                         <input
                                           type="text"
                                           value={nameCode}
@@ -1104,7 +1099,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Catégorie</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('category')}</label>
                                         <select
                                           value={category}
                                           onChange={(e) => {
@@ -1116,7 +1111,7 @@ const Documents: React.FC = () => {
                                           }}
                                           className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         >
-                                          <option value="">Sélectionner</option>
+                                          <option value="">{t('select')}</option>
                                           <option value="Ciment">Ciment</option>
                                           <option value="Briques">Briques</option>
                                           <option value="Sable">Sable</option>
@@ -1134,7 +1129,7 @@ const Documents: React.FC = () => {
                                         </select>
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('quantity')}</label>
                                         <input
                                           type="text"
                                           value={quantityUnit[0] || ''}
@@ -1160,7 +1155,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Prix unitaire</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('unitPrice')}</label>
                                         <input
                                           type="text"
                                           value={(() => {
@@ -1190,7 +1185,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité manquante</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('missingQuantity')}</label>
                                         <input
                                           type="number"
                                           value={missingQuantities[`${nameCode}-${index}`] || ''}
@@ -1223,7 +1218,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité surplus</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('surplusQuantity')}</label>
                                         <input
                                           type="number"
                                           value={surplusQuantities[`${nameCode}-${index}`] || ''}
@@ -1256,7 +1251,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Total</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('total')}</label>
                                         <div className="text-sm font-medium text-gray-900 dark:text-white py-1">
                                           {(() => {
                                             const totalMatch = product.match(/=\s*([\d.]+)\s*DH/);
@@ -1284,7 +1279,7 @@ const Documents: React.FC = () => {
                                           }}
                                           className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
-                                          Ajouter à la liste d'attente
+                                          {t('addToWaitingList')}
                                         </button>
 
                                         {missingQuantities[`${nameCode}-${index}`] > 0 && (
@@ -1308,7 +1303,7 @@ const Documents: React.FC = () => {
                                             }}
                                             className="px-4 py-2 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-md transition-colors min-w-[180px] text-center"
                                           >
-                                            Ajouter avec quantité manquante
+                                            {t('addWithMissingQuantity')}
                                           </button>
                                         )}
 
@@ -1333,7 +1328,7 @@ const Documents: React.FC = () => {
                                             }}
                                             className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors min-w-[180px] text-center"
                                           >
-                                            Ajouter avec quantité surplus
+                                            {t('addWithSurplusQuantity')}
                                           </button>
                                         )}
 
@@ -1355,7 +1350,7 @@ const Documents: React.FC = () => {
                                           }}
                                           className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
-                                          Quantité manquante
+                                          {t('missingQuantity')}
                                         </button>
 
                                         <button
@@ -1375,7 +1370,7 @@ const Documents: React.FC = () => {
                                           }}
                                           className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors min-w-[140px] text-center"
                                         >
-                                          Quantité surplus
+                                          {t('surplusQuantity')}
                                         </button>
 
                                         {/* Bouton Rejeter indépendant */}
@@ -1461,7 +1456,7 @@ const Documents: React.FC = () => {
               <button
                 onClick={closeViewModal}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                title="Fermer"
+                title={t('close')}
               >
                 <X className="w-5 h-5" />
               </button>
