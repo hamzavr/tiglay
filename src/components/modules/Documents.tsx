@@ -123,7 +123,7 @@ const Documents: React.FC = () => {
   }, [documents]);
 
   const documentTypes = {
-    all: 'Tous les documents',
+    all: t('allDocuments'),
     supplier_purchase_order: t('supplierPurchaseOrder'),
     reception_slip: t('receptionSlip'),
     stock_entry: t('stockEntry'),
@@ -147,11 +147,11 @@ const Documents: React.FC = () => {
   };
 
   const statusTypes = {
-    all: 'Tous les statuts',
-    draft: 'Brouillon',
-    sent: 'Envoyé',
-    paid: 'Payé',
-    cancelled: 'Annulé'
+    all: t('allStatuses'),
+    draft: t('draft'),
+    sent: t('sent'),
+    paid: t('paid'),
+    cancelled: t('cancelled')
   };
 
   const getStatusColor = (status: string) => {

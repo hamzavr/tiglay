@@ -556,7 +556,7 @@ const Clients: React.FC = () => {
               {/* Actions */}
               <div className="flex space-x-2">
                 <Button variant="secondary" size="sm" className="flex-1" onClick={() => openHistoryModal(client)}>
-                  Historique
+                  {t('history')}
                 </Button>
                 <Button 
                   variant="primary" 
@@ -564,7 +564,7 @@ const Clients: React.FC = () => {
                   className="flex-1"
                   onClick={() => openSaleModal(client)}
                 >
-                  Nouvelle Vente
+                  {t('newSale')}
                 </Button>
               </div>
             </div>
@@ -586,7 +586,7 @@ const Clients: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingClient ? 'Modifier le client' : 'Nouveau client'}
+                {editingClient ? t('editClient') : t('newClient')}
               </h3>
               <button
                 onClick={closeModal}
@@ -599,7 +599,7 @@ const Clients: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nom *
+                  {t('name')} *
                 </label>
                 <input
                   type="text"
@@ -612,7 +612,7 @@ const Clients: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Téléphone *
+                  {t('phone')} *
                 </label>
                 <input
                   type="tel"
@@ -625,7 +625,7 @@ const Clients: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
+                  {t('email')}
                 </label>
                 <input
                   type="email"
@@ -637,7 +637,7 @@ const Clients: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Adresse
+                  {t('address')}
                 </label>
                 <textarea
                   value={formData.address}
@@ -649,10 +649,10 @@ const Clients: React.FC = () => {
 
               <div className="flex justify-end space-x-3">
                 <Button variant="secondary" onClick={closeModal}>
-                  Annuler
+                  {t('cancel')}
                 </Button>
                 <Button variant="primary" type="submit">
-                  {editingClient ? 'Modifier' : 'Créer'}
+                  {editingClient ? t('edit') : t('create')}
                 </Button>
               </div>
             </form>
@@ -666,7 +666,7 @@ const Clients: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Historique des ventes - {historyClient.name}
+                {t('salesHistory')} - {historyClient.name}
               </h3>
               <button
                 onClick={closeHistoryModal}
@@ -757,7 +757,7 @@ const Clients: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Nouvelle Vente - {selectedClient.name}
+                {t('newSale')} - {selectedClient.name}
               </h3>
               <button
                 onClick={closeSaleModal}
@@ -772,7 +772,7 @@ const Clients: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date de livraison souhaitée
+                    {t('desiredDeliveryDate')}
                   </label>
                   <input
                     type="date"
@@ -787,7 +787,7 @@ const Clients: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Total de la vente
+                    {t('saleTotal')}
                   </label>
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                     {getSaleTotal().toLocaleString()} DH

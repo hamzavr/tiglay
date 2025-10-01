@@ -430,7 +430,7 @@ const Suppliers: React.FC = () => {
               {/* Actions */}
               <div className="flex space-x-2">
                 <Button variant="secondary" size="sm" className="flex-1">
-                  Voir Commandes
+                  {t('viewOrders')}
                 </Button>
                 <Button 
                   variant="primary" 
@@ -438,7 +438,7 @@ const Suppliers: React.FC = () => {
                   className="flex-1"
                   onClick={() => openOrderModal(supplier)}
                 >
-                  Nouvelle Commande
+                  {t('newOrder')}
                 </Button>
               </div>
             </div>
@@ -460,7 +460,7 @@ const Suppliers: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingSupplier ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}
+                {editingSupplier ? t('editSupplier') : t('newSupplier')}
               </h3>
               <button
                 onClick={closeModal}
@@ -473,7 +473,7 @@ const Suppliers: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nom *
+                  {t('name')} *
                 </label>
                 <input
                   type="text"
@@ -486,7 +486,7 @@ const Suppliers: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Téléphone *
+                  {t('phone')} *
                 </label>
                 <input
                   type="tel"
@@ -499,7 +499,7 @@ const Suppliers: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
+                  {t('email')}
                 </label>
                 <input
                   type="email"
@@ -511,7 +511,7 @@ const Suppliers: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Adresse
+                  {t('address')}
                 </label>
                 <textarea
                   value={formData.address}
@@ -523,7 +523,7 @@ const Suppliers: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Numéro de TVA
+                  {t('taxNumber')}
                 </label>
                 <input
                   type="text"
@@ -535,10 +535,10 @@ const Suppliers: React.FC = () => {
 
               <div className="flex justify-end space-x-3">
                 <Button variant="secondary" onClick={closeModal}>
-                  Annuler
+                  {t('cancel')}
                 </Button>
                 <Button variant="primary" type="submit">
-                  {editingSupplier ? 'Modifier' : 'Créer'}
+                  {editingSupplier ? t('edit') : t('create')}
                 </Button>
               </div>
             </form>
@@ -552,7 +552,7 @@ const Suppliers: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Nouvelle Commande - {selectedSupplier.name}
+                {t('newOrder')} - {selectedSupplier.name}
               </h3>
               <button
                 onClick={closeOrderModal}
@@ -567,7 +567,7 @@ const Suppliers: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date de livraison souhaitée
+                    {t('desiredDeliveryDate')}
                   </label>
                   <input
                     type="date"
@@ -579,7 +579,7 @@ const Suppliers: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Total de la commande
+                    {t('orderTotal')}
                   </label>
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                     {getOrderTotal().toLocaleString()} DH
@@ -590,7 +590,7 @@ const Suppliers: React.FC = () => {
               {/* Products Table */}
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white">Produits commandés</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white">{t('orderedProducts')}</h4>
                   <div className="flex space-x-2">
                     <Button
                       variant="secondary"
@@ -598,7 +598,7 @@ const Suppliers: React.FC = () => {
                       icon={<PlusIcon className="w-4 h-4" />}
                       onClick={addOrderItem}
                     >
-                      Ajouter un produit
+                      {t('addProduct')}
                     </Button>
                     <Button
                       variant="primary"
@@ -606,45 +606,45 @@ const Suppliers: React.FC = () => {
                       icon={<PlusIcon className="w-4 h-4" />}
                       onClick={addNewProductItem}
                     >
-                      Ajouter un nouveau produit
+                      {t('addNewProduct')}
                     </Button>
                   </div>
                 </div>
 
                 {orderForm.items.length === 0 && orderForm.newProducts.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                    Aucun produit ajouté
+                    {t('noProductsAdded')}
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {/* Produits existants */}
                     {orderForm.items.length > 0 && (
                       <div>
-                        <h5 className="text-md font-medium text-gray-900 dark:text-white mb-3">Produits existants</h5>
+                        <h5 className="text-md font-medium text-gray-900 dark:text-white mb-3">{t('existingProducts')}</h5>
                         <div className="overflow-x-auto">
                           <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
                             <thead className="bg-gray-50 dark:bg-gray-800">
                               <tr>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Nom
+                                  {t('name')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Catégorie
+                                  {t('category')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Quantité
+                                  {t('quantity')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Unité
+                                  {t('unit')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Prix Unitaire
+                                  {t('unitPrice')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Total
+                                  {t('total')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Actions
+                                  {t('actions')}
                                 </th>
                               </tr>
                             </thead>

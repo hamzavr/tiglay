@@ -165,7 +165,7 @@ const Reports: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Type de rapport
+              {t('reportType')}
             </label>
             <select
               value={selectedReport}
@@ -180,7 +180,7 @@ const Reports: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Période
+              {t('period')}
             </label>
             <select
               value={selectedPeriod}
@@ -195,7 +195,7 @@ const Reports: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Date de début
+              {t('startDate')}
             </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -210,7 +210,7 @@ const Reports: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Date de fin
+              {t('endDate')}
             </label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -228,28 +228,28 @@ const Reports: React.FC = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Chiffre d'affaires"
+          title={t('revenue')}
           value={`${stats.totalRevenue.toLocaleString()} DH`}
           icon={<TrendingUp className="w-6 h-6" />}
           color="green"
           trend={12}
         />
         <StatsCard
-          title="Bénéfice net"
+          title={t('netProfit')}
           value={`${stats.totalProfit.toLocaleString()} DH`}
           icon={<BarChart3 className="w-6 h-6" />}
           color="blue"
           trend={8}
         />
         <StatsCard
-          title="Nombre de ventes"
+          title={t('numberOfSales')}
           value={stats.totalSalesCount.toString()}
           icon={<Package className="w-6 h-6" />}
           color="purple"
           trend={15}
         />
         <StatsCard
-          title="Panier moyen"
+          title={t('averageBasket')}
           value={`${stats.averageCart.toLocaleString()} DH`}
           icon={<DollarSign className="w-6 h-6" />}
           color="orange"
@@ -259,7 +259,7 @@ const Reports: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Mauvaises ventes */}
-        <Card title="Mauvaises ventes">
+        <Card title={t('badSales')}>
           <div className="space-y-4">
             {worstSellingProducts.length > 0 ? (
               worstSellingProducts.map((item, index) => (

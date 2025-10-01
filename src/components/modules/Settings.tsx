@@ -185,18 +185,18 @@ const Settings: React.FC = () => {
   const renderCompanyInfo = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Informations de l'entreprise</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('companyInformation')}</h3>
         {!isEditingCompany ? (
           <Button variant="primary" onClick={handleEditCompany}>
-            Modifier
+            {t('edit')}
           </Button>
         ) : (
           <div className="flex space-x-2">
             <Button variant="secondary" onClick={handleCancelEditCompany}>
-              Annuler
+              {t('cancel')}
             </Button>
             <Button variant="primary" onClick={handleSaveCompany}>
-              Enregistrer
+              {t('save')}
             </Button>
           </div>
         )}
@@ -310,7 +310,7 @@ const Settings: React.FC = () => {
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('username')}</th>
-              <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Email</th>
+              <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('email')}</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('role')}</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('lastLogin')}</th>
               <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('status')}</th>
@@ -324,12 +324,12 @@ const Settings: React.FC = () => {
                 <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{user.email}</td>
                 <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
-                    {user.role === 'admin' ? 'Administrateur' : 
-                     user.role === 'manager' ? 'Manager' : 'Caissier'}
+                    {user.role === 'admin' ? t('administrator') : 
+                     user.role === 'manager' ? t('manager') : t('cashier')}
                   </span>
                 </td>
                 <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Jamais'}
+                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : t('never')}
                 </td>
                 <td className="py-3 px-4">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -337,7 +337,7 @@ const Settings: React.FC = () => {
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                       : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                   }`}>
-                    {user.isActive ? 'Actif' : 'Inactif'}
+                    {user.isActive ? t('active') : t('inactive')}
                   </span>
                 </td>
                 <td className="py-3 px-4">

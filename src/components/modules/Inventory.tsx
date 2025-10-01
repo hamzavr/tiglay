@@ -339,7 +339,7 @@ const Inventory: React.FC = () => {
 
         <div className="flex items-center">
           <Button variant="primary" size="md" icon={<Plus className="w-4 h-4" />} onClick={openAddModal}>
-            Ajouter Produit
+            {t('addProduct')}
           </Button>
         </div>
       </div>
@@ -367,7 +367,7 @@ const Inventory: React.FC = () => {
             title="Filtrer par catégorie"
             aria-label="Filtrer par catégorie"
           >
-            <option value="all">Toutes catégories</option>
+            <option value="all">{t('allCategories')}</option>
             {categories.slice(1).map(category => (
               <option key={category} value={category}>{category}</option>
             ))}
@@ -455,7 +455,7 @@ const Inventory: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {editingProduct ? 'Modifier Produit' : 'Ajouter Produit'}
+                {editingProduct ? t('editProduct') : t('addProduct')}
               </h3>
               <button
                 onClick={closeModal}
@@ -471,14 +471,14 @@ const Inventory: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nom *
+                    {t('name')} *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Nom du produit"
+                    placeholder={t('productNamePlaceholder')}
                     required
                   />
                 </div>
@@ -486,7 +486,7 @@ const Inventory: React.FC = () => {
                 {/* Champ image */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Image
+                    {t('image')}
                   </label>
                   <input
                     type="file"
@@ -512,14 +512,14 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Code *
+                    {t('code')} *
                   </label>
                   <input
                     type="text"
                     value={formData.code}
                     onChange={(e) => handleInputChange('code', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Code produit"
+                    placeholder={t('productCodePlaceholder')}
                     required
                   />
                 </div>
@@ -536,7 +536,7 @@ const Inventory: React.FC = () => {
                     title="Sélectionner une catégorie"
                     aria-label="Sélectionner une catégorie"
                   >
-                    <option value="">Sélectionner une catégorie</option>
+                    <option value="">{t('selectCategory')}</option>
                     {categories.slice(1).map(category => (
                       <option key={category} value={category}>{category}</option>
                     ))}
@@ -545,7 +545,7 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Prix d'achat (DH) *
+                    {t('buyPrice')} (DH) *
                   </label>
                   <input
                     type="number"
@@ -561,7 +561,7 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Prix de vente (DH) *
+                    {t('sellPrice')} (DH) *
                   </label>
                   <input
                     type="number"
@@ -577,7 +577,7 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Stock actuel
+                    {t('currentStock')}
                   </label>
                   <input
                     type="number"
@@ -591,7 +591,7 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Stock minimum
+                    {t('minStock')}
                   </label>
                   <input
                     type="number"
@@ -605,7 +605,7 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date d'expiration
+                    {t('expiryDate')}
                   </label>
                   <input
                     type="date"
@@ -617,27 +617,27 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Emplacement
+                    {t('location')}
                   </label>
                   <input
                     type="text"
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="Rayon A, Étagère 2"
+                    placeholder={t('locationPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description
+                  {t('description')}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Description détaillée du produit"
+                  placeholder={t('productDescriptionPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -656,7 +656,7 @@ const Inventory: React.FC = () => {
                   variant="primary"
                   className="flex-1"
                 >
-                  {editingProduct ? 'Modifier' : 'Ajouter'}
+                  {editingProduct ? t('edit') : t('add')}
                 </Button>
               </div>
             </form>
