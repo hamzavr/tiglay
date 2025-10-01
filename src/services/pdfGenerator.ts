@@ -78,13 +78,12 @@ class PDFGenerator {
     // Draw table border
     this.doc.rect(margin, startY, tableWidth, 8 + (data.length * 8), 'S');
     
-    // Draw headers with proper background
-    this.doc.setFillColor(240, 240, 240);
-    this.doc.setTextColor(0, 0, 0);
+    // Draw headers - all with same style as "Code"
     headers.forEach((header, index) => {
       const x = margin + (index * colWidth);
       
-      // Draw header background
+      // Draw header background (light gray)
+      this.doc.setFillColor(240, 240, 240);
       this.doc.rect(x, startY, colWidth, 8, 'F');
       
       // Draw vertical lines
@@ -92,11 +91,11 @@ class PDFGenerator {
         this.doc.line(x, startY, x, startY + 8);
       }
       
-      // Add header text with proper color and background
+      // Add header text - ensure it's visible
       this.doc.setTextColor(0, 0, 0);
-      this.doc.setFillColor(255, 255, 255); // White background for text
+      this.doc.setFontSize(8);
       const textX = x + (colWidth / 2);
-      this.addFrenchText(header, textX, startY + 5, 8, 'center');
+      this.doc.text(header, textX, startY + 5, { align: 'center' });
     });
 
     // Draw data rows
@@ -116,7 +115,8 @@ class PDFGenerator {
         
         const text = typeof cell === 'number' ? cell.toLocaleString() : cell;
         const textX = x + (colWidth / 2);
-        this.addFrenchText(text.toString(), textX, y + 5, 7, 'center');
+        this.doc.setFontSize(7);
+        this.doc.text(text.toString(), textX, y + 5, { align: 'center' });
       });
     });
   }
@@ -151,9 +151,8 @@ class PDFGenerator {
     // Document title (centered)
     this.addFrenchText('BON DE LIVRAISON', 105, 25, 16, 'center');
     
-    // Company name in Arabic (bold)
-    this.addArabicText('عقاقير النهضة N', 190, 35, 14);
-    this.addArabicText('النهضة', 190, 42, 10);
+    // Company name
+    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
@@ -221,9 +220,8 @@ class PDFGenerator {
     // Document title (centered)
     this.addFrenchText('BON DE COMMANDE CLIENT', 105, 25, 16, 'center');
     
-    // Company name in Arabic (bold)
-    this.addArabicText('عقاقير النهضة N', 190, 35, 14);
-    this.addArabicText('النهضة', 190, 42, 10);
+    // Company name
+    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
@@ -281,9 +279,8 @@ class PDFGenerator {
     // Document title (centered)
     this.addFrenchText('FACTURE', 105, 25, 16, 'center');
     
-    // Company name in Arabic (bold)
-    this.addArabicText('عقاقير النهضة N', 190, 35, 14);
-    this.addArabicText('النهضة', 190, 42, 10);
+    // Company name
+    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
@@ -348,9 +345,8 @@ class PDFGenerator {
     // Document title (centered)
     this.addFrenchText('BON DE COMMANDE FOURNISSEUR', 105, 25, 16, 'center');
     
-    // Company name in Arabic (bold)
-    this.addArabicText('عقاقير النهضة N', 190, 35, 14);
-    this.addArabicText('النهضة', 190, 42, 10);
+    // Company name
+    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
