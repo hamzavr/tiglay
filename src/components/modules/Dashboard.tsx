@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Package, Users, UserCheck, TrendingUp, AlertTriangle, Clock, ArrowRight, CheckCircle, Circle } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
@@ -15,6 +15,10 @@ const Dashboard: React.FC = () => {
   const { data: suppliers, execute: fetchSuppliers } = useApi(suppliersAPI.getAll);
   const { data: clients, execute: fetchClients } = useApi(clientsAPI.getAll);
   const { data: workflowStats, execute: fetchWorkflowStats } = useApi(documentsAPI.getWorkflowStats);
+  
+  // États pour les compteurs en temps réel
+  const [waitingListCount, setWaitingListCount] = useState(0);
+  const [inventoryCount, setInventoryCount] = useState(0);
 
   useEffect(() => {
     fetchSalesStats();
@@ -24,10 +28,53 @@ const Dashboard: React.FC = () => {
     fetchWorkflowStats();
   }, []);
 
+  // Mise à jour du compteur de la liste d'attente
+  useEffect(() => {
+    const updateWaitingListCount = () => {
+      try {
+        const raw = localStorage.getItem('waitingListProducts');
+        const items = raw ? JSON.parse(raw) : [];
+        setWaitingListCount(items.length);
+      } catch (error) {
+        console.error('Erreur lors de la récupération de la liste d\'attente:', error);
+        setWaitingListCount(0);
+      }
+    };
+
+    // Mise à jour initiale
+    updateWaitingListCount();
+
+    // Écouter les changements dans localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'waitingListProducts') {
+        updateWaitingListCount();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Écouter les changements dans le même onglet
+    const interval = setInterval(updateWaitingListCount, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Mise à jour du compteur de l'inventaire
+  useEffect(() => {
+    const updateInventoryCount = () => {
+      setInventoryCount(products?.length || 0);
+    };
+
+    updateInventoryCount();
+  }, [products]);
+
   const workflowSteps = [
     { id: 1, name: t('purchaseOrder'), status: 'completed', count: workflowStats?.purchaseOrders || 0 },
-    { id: 2, name: t('goodsReception'), status: 'completed', count: workflowStats?.receptionSlips || 0 },
-    { id: 3, name: t('stockIn'), status: 'completed', count: workflowStats?.stockEntries || 0 },
+    { id: 2, name: t('goodsReception'), status: 'completed', count: waitingListCount },
+    { id: 3, name: t('stockIn'), status: 'completed', count: inventoryCount },
     { id: 4, name: t('salesOrder'), status: 'inProgress', count: workflowStats?.salesOrders || 0 },
     { id: 5, name: t('deliveryNote'), status: 'pending', count: workflowStats?.deliveryNotes || 0 },
     { id: 6, name: t('invoice'), status: 'pending', count: workflowStats?.invoices || 0 }
@@ -59,7 +106,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="mt-2 text-center">
                   <p className="text-xs font-medium text-gray-900 dark:text-white">{step.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{step.count} {t('documents')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{step.count}</p>
                 </div>
               </div>
               {index < workflowSteps.length - 1 && (

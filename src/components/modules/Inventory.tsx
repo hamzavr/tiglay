@@ -75,6 +75,7 @@ const Inventory: React.FC = () => {
     fetchProducts({ search: searchTerm });
   }, [searchTerm]);
 
+
   // Vérifier s'il y a des données pré-remplies depuis la page Documents
   useEffect(() => {
     const prefilledData = localStorage.getItem('prefilledProductData');
@@ -246,16 +247,34 @@ const Inventory: React.FC = () => {
       closeModal();
       fetchProducts({ search: searchTerm });
 
-      // Si on vient de la liste d'attente, retirer l'élément correspondant
+      // Si on vient de la liste d'attente, gérer la suppression ou la mise à jour
       try {
         const removeId = localStorage.getItem('waitingListRemoveId');
         if (removeId) {
           const raw = localStorage.getItem('waitingListProducts');
           const list = raw ? JSON.parse(raw) : [];
-          const next = Array.isArray(list) ? list.filter((it: any) => it.id !== removeId) : [];
-          localStorage.setItem('waitingListProducts', JSON.stringify(next));
+          const itemToProcess = list.find((it: any) => it.id === removeId);
+          
+          if (itemToProcess) {
+            // Si le produit a une quantité surplus, on garde seulement la quantité surplus
+            if (itemToProcess.surplusQuantity && itemToProcess.surplusQuantity > 0) {
+              const updatedItem = {
+                ...itemToProcess,
+                quantity: itemToProcess.surplusQuantity,
+                surplusQuantity: 0,
+                flag: 'normal'
+              };
+              const next = list.map((it: any) => it.id === removeId ? updatedItem : it);
+              localStorage.setItem('waitingListProducts', JSON.stringify(next));
+              alert('Quantité normale ajoutée à l\'inventaire. Quantité surplus conservée dans la liste d\'attente.');
+            } else {
+              // Sinon, on supprime complètement l'élément
+              const next = Array.isArray(list) ? list.filter((it: any) => it.id !== removeId) : [];
+              localStorage.setItem('waitingListProducts', JSON.stringify(next));
+              alert('Produit ajouté à l\'inventaire et retiré de la liste d\'attente');
+            }
+          }
           localStorage.removeItem('waitingListRemoveId');
-          alert('Produit ajouté à l\'inventaire et retiré de la liste d\'attente');
         }
       } catch (_) {
         // no-op
@@ -365,7 +384,7 @@ const Inventory: React.FC = () => {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Code</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('name')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('category')}</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('stock')}</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">État quantité</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('buyPrice')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('sellPrice')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('expiration')}</th>

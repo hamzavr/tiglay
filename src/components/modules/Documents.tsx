@@ -78,6 +78,8 @@ const Documents: React.FC = () => {
     notes: '',
     items: []
   });
+  const [missingQuantities, setMissingQuantities] = useState<Record<string, number>>({});
+  const [surplusQuantities, setSurplusQuantities] = useState<Record<string, number>>({});
 
   // Fetch documents from API
   const { data: documents, loading: documentsLoading, error: documentsError, execute: fetchDocuments } = useApi(documentsAPI.getAll);
@@ -350,6 +352,8 @@ const Documents: React.FC = () => {
     name: string;
     code: string;
     quantity: number;
+    missingQuantity?: number;
+    surplusQuantity?: number;
     unit: string;
     unitPrice: number;
     category: string;
@@ -369,6 +373,8 @@ const Documents: React.FC = () => {
           ...existing,
           // toujours rafraîchir quantités/prix éventuels
           quantity: item.quantity,
+          missingQuantity: item.missingQuantity,
+          surplusQuantity: item.surplusQuantity,
           unit: item.unit,
           unitPrice: item.unitPrice,
           flag,
@@ -383,6 +389,8 @@ const Documents: React.FC = () => {
         name: item.name,
         code: item.code,
         quantity: item.quantity,
+        missingQuantity: item.missingQuantity,
+        surplusQuantity: item.surplusQuantity,
         unit: item.unit,
         unitPrice: item.unitPrice,
         category: item.category,
@@ -1080,7 +1088,7 @@ const Documents: React.FC = () => {
                                   const category = nameCodeCategoryParts[1] ? nameCodeCategoryParts[1].replace(']', '') : '';
                                   
                                   return (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
+                                    <div key={index} className="grid grid-cols-1 md:grid-cols-8 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
                                       <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">Nom/Code</label>
                                         <input
@@ -1182,6 +1190,72 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité manquante</label>
+                                        <input
+                                          type="number"
+                                          value={missingQuantities[`${nameCode}-${index}`] || ''}
+                                          onChange={(e) => {
+                                            const productKey = `${nameCode}-${index}`;
+                                            const missingQty = parseInt(e.target.value) || 0;
+                                            
+                                            // Si on saisit une quantité manquante, vider la quantité surplus
+                                            if (missingQty > 0) {
+                                              setSurplusQuantities(prev => {
+                                                const newState = { ...prev };
+                                                delete newState[productKey];
+                                                return newState;
+                                              });
+                                            }
+                                            
+                                            setMissingQuantities(prev => ({
+                                              ...prev,
+                                              [productKey]: missingQty
+                                            }));
+                                          }}
+                                          placeholder="0"
+                                          min="0"
+                                          disabled={surplusQuantities[`${nameCode}-${index}`] > 0}
+                                          className={`w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white ${
+                                            surplusQuantities[`${nameCode}-${index}`] > 0
+                                              ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed'
+                                              : 'bg-white dark:bg-gray-700'
+                                          }`}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité surplus</label>
+                                        <input
+                                          type="number"
+                                          value={surplusQuantities[`${nameCode}-${index}`] || ''}
+                                          onChange={(e) => {
+                                            const productKey = `${nameCode}-${index}`;
+                                            const surplusQty = parseInt(e.target.value) || 0;
+                                            
+                                            // Si on saisit une quantité surplus, vider la quantité manquante
+                                            if (surplusQty > 0) {
+                                              setMissingQuantities(prev => {
+                                                const newState = { ...prev };
+                                                delete newState[productKey];
+                                                return newState;
+                                              });
+                                            }
+                                            
+                                            setSurplusQuantities(prev => ({
+                                              ...prev,
+                                              [productKey]: surplusQty
+                                            }));
+                                          }}
+                                          placeholder="0"
+                                          min="0"
+                                          disabled={missingQuantities[`${nameCode}-${index}`] > 0}
+                                          className={`w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white ${
+                                            missingQuantities[`${nameCode}-${index}`] > 0
+                                              ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed'
+                                              : 'bg-white dark:bg-gray-700'
+                                          }`}
+                                        />
+                                      </div>
+                                      <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">Total</label>
                                         <div className="text-sm font-medium text-gray-900 dark:text-white py-1">
                                           {(() => {
@@ -1213,119 +1287,96 @@ const Documents: React.FC = () => {
                                           Ajouter à la liste d'attente
                                         </button>
 
-                                        <div className="relative">
+                                        {missingQuantities[`${nameCode}-${index}`] > 0 && (
                                           <button
                                             type="button"
-                                            onClick={(e) => {
-                                              const btn = e.currentTarget as HTMLButtonElement;
-                                              const menu = btn.nextElementSibling as HTMLDivElement | null;
-                                              if (!menu) return;
-
-                                              // Prepare for measurement
-                                              menu.style.position = 'fixed';
-                                              menu.style.visibility = 'hidden';
-                                              menu.classList.remove('hidden');
-
-                                              const btnRect = btn.getBoundingClientRect();
-                                              const menuRect = menu.getBoundingClientRect();
-
-                                              const margin = 6;
-                                              const viewportWidth = window.innerWidth;
-                                              const viewportHeight = window.innerHeight;
-
-                                              let left = btnRect.left;
-                                              let top = btnRect.bottom + margin;
-
-                                              // Horizontal clamping
-                                              if (left + menuRect.width > viewportWidth - 8) {
-                                                left = Math.max(8, btnRect.right - menuRect.width);
-                                              }
-                                              if (left < 8) left = 8;
-
-                                              // Flip vertically if not enough space below
-                                              const spaceBelow = viewportHeight - btnRect.bottom;
-                                              const spaceAbove = btnRect.top;
-                                              if (spaceBelow < menuRect.height + margin && spaceAbove > menuRect.height + margin) {
-                                                top = Math.max(8, btnRect.top - menuRect.height - margin);
-                                              }
-
-                                              menu.style.left = `${left}px`;
-                                              menu.style.top = `${top}px`;
-                                              menu.style.visibility = 'visible';
-
-                                              // Close on outside click or scroll/resize
-                                              const close = (ev: Event) => {
-                                                if (ev.type === 'click') {
-                                                  const t = ev.target as Node;
-                                                  if (menu.contains(t) || btn.contains(t as Node)) return;
-                                                }
-                                                menu.classList.add('hidden');
-                                                window.removeEventListener('scroll', close, true);
-                                                window.removeEventListener('resize', close, true);
-                                                window.removeEventListener('click', close, true);
+                                            onClick={() => {
+                                              const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
+                                              const productData = {
+                                                name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
+                                                code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
+                                                quantity: parseInt(quantityUnit[0]) || 0,
+                                                missingQuantity: missingQuantities[`${nameCode}-${index}`],
+                                                unit: quantityUnit[1] || 'U',
+                                                unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
+                                                category: category || 'Autre'
                                               };
-                                              window.addEventListener('scroll', close, true);
-                                              window.addEventListener('resize', close, true);
-                                              window.addEventListener('click', close, true);
+                                              const res = addProductToWaitingList(productData, 'missing');
+                                              if (res === 'added') alert('Produit ajouté avec quantité manquante à la liste d\'attente');
+                                              else if (res === 'updated') alert('Produit déjà dans la liste, drapeau mis à jour (manquante)');
+                                              else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
                                             }}
-                                            className="px-4 py-2 text-sm bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors min-w-[140px] text-center"
+                                            className="px-4 py-2 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-md transition-colors min-w-[180px] text-center"
                                           >
-                                            Quantités incorrectes
+                                            Ajouter avec quantité manquante
                                           </button>
-                                          <div className="z-50 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow hidden">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
-                                                const productData = {
-                                                  name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
-                                                  code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
-                                                  quantity: parseInt(quantityUnit[0]) || 0,
-                                                  unit: quantityUnit[1] || 'U',
-                                                  unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
-                                                  category: category || 'Autre'
-                                                };
-                                                const res = addProductToWaitingList(productData, 'missing');
-                                                if (res === 'added') alert('Produit bien ajouté à la liste d\'attente avec quantité manquante');
-                                                else if (res === 'updated') alert('Produit déjà dans la liste, drapeau mis à jour (manquante)');
-                                                else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
-                                              }}
-                                              className="block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-                                            >
-                                              Quantité manquante
-                                            </button>
-                                            <div className="border-t border-gray-200 dark:border-gray-700" />
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const acceptSurplus = confirm('Accepter la quantité surplus ?');
-                                                const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
-                                                const productData = {
-                                                  name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
-                                                  code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
-                                                  quantity: parseInt(quantityUnit[0]) || 0,
-                                                  unit: quantityUnit[1] || 'U',
-                                                  unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
-                                                  category: category || 'Autre'
-                                                };
-                                                if (acceptSurplus) {
-                                                  const res = addProductToWaitingList(productData, 'surplus');
-                                                  if (res === 'added') alert('Produit bien ajouté à la liste d\'attente avec quantité surplus');
-                                                  else if (res === 'updated') alert('Produit déjà dans la liste, drapeau mis à jour (surplus)');
-                                                  else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
-                                                } else {
-                                                  // Rejet indépendant: supprimer la ligne produit du bon de commande
-                                                  const newNotes = notes.replace(product + '\n', '').replace(product, '');
-                                                  setFormData({ ...formData, notes: newNotes });
-                                                  alert('Produit rejeté');
-                                                }
-                                              }}
-                                              className="block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200"
-                                            >
-                                              Quantité surplus (accepter / rejeter)
-                                            </button>
-                                          </div>
-                                        </div>
+                                        )}
+
+                                        {surplusQuantities[`${nameCode}-${index}`] > 0 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
+                                              const productData = {
+                                                name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
+                                                code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
+                                                quantity: parseInt(quantityUnit[0]) || 0,
+                                                surplusQuantity: surplusQuantities[`${nameCode}-${index}`],
+                                                unit: quantityUnit[1] || 'U',
+                                                unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
+                                                category: category || 'Autre'
+                                              };
+                                              const res = addProductToWaitingList(productData, 'surplus');
+                                              if (res === 'added') alert('Produit ajouté avec quantité surplus à la liste d\'attente');
+                                              else if (res === 'updated') alert('Produit déjà dans la liste, drapeau mis à jour (surplus)');
+                                              else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
+                                            }}
+                                            className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors min-w-[180px] text-center"
+                                          >
+                                            Ajouter avec quantité surplus
+                                          </button>
+                                        )}
+
+                                        {/* Boutons pour quantités incorrectes */}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const productKey = `${nameCode}-${index}`;
+                                            setMissingQuantities(prev => ({
+                                              ...prev,
+                                              [productKey]: parseInt(quantityUnit[0]) || 0
+                                            }));
+                                            // Vider la quantité surplus si elle existe
+                                            setSurplusQuantities(prev => {
+                                              const newState = { ...prev };
+                                              delete newState[productKey];
+                                              return newState;
+                                            });
+                                          }}
+                                          className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
+                                        >
+                                          Quantité manquante
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const productKey = `${nameCode}-${index}`;
+                                            setSurplusQuantities(prev => ({
+                                              ...prev,
+                                              [productKey]: parseInt(quantityUnit[0]) || 0
+                                            }));
+                                            // Vider la quantité manquante si elle existe
+                                            setMissingQuantities(prev => {
+                                              const newState = { ...prev };
+                                              delete newState[productKey];
+                                              return newState;
+                                            });
+                                          }}
+                                          className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors min-w-[140px] text-center"
+                                        >
+                                          Quantité surplus
+                                        </button>
 
                                         {/* Bouton Rejeter indépendant */}
                                         <button

@@ -7,6 +7,8 @@ interface WaitingItem {
   name: string;
   code: string;
   quantity: number;
+  missingQuantity?: number;
+  surplusQuantity?: number;
   unit: string;
   unitPrice: number;
   category: string;
@@ -70,6 +72,8 @@ const WaitingList: React.FC = () => {
                 <th className="text-left px-4 py-2">Code</th>
                 <th className="text-left px-4 py-2">Catégorie</th>
                 <th className="text-left px-4 py-2">État quantité</th>
+                <th className="text-left px-4 py-2">Quantité manquante</th>
+                <th className="text-left px-4 py-2">Quantité surplus</th>
                 <th className="text-left px-4 py-2">Unité</th>
                 <th className="text-left px-4 py-2">Prix unitaire</th>
                 <th className="text-left px-4 py-2">Total</th>
@@ -84,6 +88,24 @@ const WaitingList: React.FC = () => {
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.code}</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.category}</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.quantity}</td>
+                  <td className="px-4 py-2">
+                    <span className={`text-sm font-medium ${
+                      item.missingQuantity && item.missingQuantity > 0
+                        ? 'text-red-600 dark:text-red-400' 
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {item.missingQuantity || 0}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <span className={`text-sm font-medium ${
+                      item.surplusQuantity && item.surplusQuantity > 0
+                        ? 'text-purple-600 dark:text-purple-400' 
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {item.surplusQuantity || 0}
+                    </span>
+                  </td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.unit}</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{(item.quantity * item.unitPrice).toLocaleString()} DH</td>
@@ -96,6 +118,19 @@ const WaitingList: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
+                          // Vérifier si le produit a une quantité manquante
+                          if (item.missingQuantity && item.missingQuantity > 0) {
+                            alert('Ce produit ne peut pas être ajouté à l\'inventaire car il a une quantité manquante. Veuillez d\'abord résoudre le problème de quantité manquante.');
+                            return;
+                          }
+                          
+                          // Pour les produits avec quantité surplus, on ajoute seulement la quantité normale
+                          // et on garde la quantité surplus dans la liste d'attente
+                          if (item.surplusQuantity && item.surplusQuantity > 0) {
+                            const confirmAdd = confirm(`Ce produit a une quantité surplus de ${item.surplusQuantity}. Voulez-vous ajouter seulement la quantité normale (${item.quantity}) à l'inventaire ? La quantité surplus restera dans la liste d'attente.`);
+                            if (!confirmAdd) return;
+                          }
+                          
                           // Pré-remplir les données pour l'inventaire
                           const prefilled = {
                             name: item.name,
@@ -110,9 +145,16 @@ const WaitingList: React.FC = () => {
                           // Naviguer à l'inventaire
                           window.location.hash = '#inventory';
                         }}
-                        className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded"
+                        disabled={item.missingQuantity && item.missingQuantity > 0}
+                        className={`px-2 py-1 text-xs rounded ${
+                          item.missingQuantity && item.missingQuantity > 0
+                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                            : item.surplusQuantity && item.surplusQuantity > 0
+                            ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
                       >
-                        Ajouter à l'inventaire
+                        {item.surplusQuantity && item.surplusQuantity > 0 ? 'Ajouter quantité normale' : 'Ajouter à l\'inventaire'}
                       </button>
                       <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">Supprimer</button>
                     </div>
