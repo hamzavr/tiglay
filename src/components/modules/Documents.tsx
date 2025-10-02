@@ -847,12 +847,12 @@ const Documents: React.FC = () => {
               {/* Customer Order Details for editing customer_sales_order */}
               {editingDocument && formData.type === 'customer_sales_order' && (
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande client</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">{t('customerOrderDetails')}</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-4">
                     <div className="flex justify-between items-center">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Total de la commande
+                          {t('orderTotal')}
                         </label>
                         <div className="text-lg font-bold text-green-600 dark:text-green-400">
                           {parseAmount(formData.amount).toLocaleString()} DH
@@ -868,7 +868,7 @@ const Documents: React.FC = () => {
               {(!editingDocument || !['supplier_purchase_order'].includes(formData.type)) && (
                 <div>
                   <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-lg font-medium text-gray-900 dark:text-white">Articles</h4>
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-white">{t('articles')}</h4>
                     {!['customer_sales_order', 'delivery_note', 'invoice'].includes(formData.type) && (
                       <Button
                         variant="secondary"
@@ -894,25 +894,25 @@ const Documents: React.FC = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Code
+                            {t('code')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Description
+                            {t('description')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Quantité
+                            {t('quantity')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Unité
+                            {t('unit')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Prix Unitaire
+                            {t('unitPrice')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Total
+                            {t('total')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Actions
+                            {t('actions')}
                           </th>
                         </tr>
                       </thead>
@@ -1434,10 +1434,10 @@ const Documents: React.FC = () => {
 
               <div className="flex justify-end space-x-3">
                 <Button variant="secondary" onClick={closeModal}>
-                  Annuler
+                  {t('cancel')}
                 </Button>
                 <Button variant="primary" type="submit" icon={<Save className="w-4 h-4" />}>
-                  {editingDocument ? 'Modifier' : 'Créer'}
+                  {editingDocument ? t('edit') : t('create')}
                 </Button>
               </div>
             </form>
@@ -1549,33 +1549,33 @@ const Documents: React.FC = () => {
               {/* Items Table - Hidden for customer_sales_order */}
               {viewingDocument.items && viewingDocument.items.length > 0 && viewingDocument.type !== 'customer_sales_order' && (
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Articles</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">{t('articles')}</h4>
                   <div className="overflow-x-auto">
                     <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           {viewingDocument.type === 'delivery_note' && (
                             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                              Image
+                              {t('image')}
                             </th>
                           )}
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Code
+                            {t('code')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Description
+                            {t('description')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Quantité
+                            {t('quantity')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Unité
+                            {t('unit')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Prix Unitaire
+                            {t('unitPrice')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Total
+                            {t('total')}
                           </th>
                         </tr>
                       </thead>
@@ -1674,7 +1674,7 @@ const Documents: React.FC = () => {
                 </div>
               ) : viewingDocument.type === 'customer_sales_order' ? (
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande client</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">{t('customerOrderDetails')}</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-3">
                     {(() => {
                       // Si les notes sont structurées (comme pour les bons de commande fournisseur)
@@ -1695,19 +1695,19 @@ const Documents: React.FC = () => {
                           <>
                             {deliveryDate && (
                               <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Date de livraison souhaitée:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{t('desiredDeliveryDate')}:</span>
                                 <span className="ml-2 text-gray-900 dark:text-white">{deliveryDate}</span>
                               </div>
                             )}
                             {total && (
                               <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">{t('total')}:</span>
                                 <span className="ml-2 text-gray-900 dark:text-white">{total}</span>
                               </div>
                             )}
                             {products.length > 0 && (
                               <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Produits commandés:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">{t('orderedProducts')}:</span>
                                 <div className="space-y-1">
                                   {products.map((product, index) => (
                                     <div key={index} className="text-sm text-gray-900 dark:text-white">
@@ -1719,7 +1719,7 @@ const Documents: React.FC = () => {
                             )}
                             {notesText && (
                               <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-1">Notes:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-1">{t('notes')}:</span>
                                 <div className="text-sm text-gray-900 dark:text-white">{notesText}</div>
                               </div>
                             )}
@@ -1730,33 +1730,33 @@ const Documents: React.FC = () => {
                         return (
                           <>
                             <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300">{t('total')}:</span>
                               <span className="ml-2 text-gray-900 dark:text-white">{parseAmount(viewingDocument.amount).toLocaleString()} DH</span>
                             </div>
                             {viewingDocument.items && viewingDocument.items.length > 0 && (
                               <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Produits vendus:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">{t('soldProducts')}:</span>
                                 <div className="overflow-x-auto">
                                   <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
                                     <thead className="bg-gray-100 dark:bg-gray-600">
                                       <tr>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                          Image
+                                          {t('image')}
                                         </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                          Code
+                                          {t('code')}
                                         </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                          Nom
+                                          {t('name')}
                                         </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                          Quantité
+                                          {t('quantity')}
                                         </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                          Prix unitaire
+                                          {t('unitPrice')}
                                         </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                          Total
+                                          {t('total')}
                                         </th>
                                       </tr>
                                     </thead>
@@ -1819,14 +1819,14 @@ const Documents: React.FC = () => {
               {/* Actions */}
               <div className="flex justify-end space-x-3">
                 <Button variant="secondary" onClick={closeViewModal}>
-                  Fermer
+                  {t('close')}
                 </Button>
                 <Button 
                   variant="primary" 
                   icon={<Download className="w-4 h-4" />}
                   onClick={() => handleDownloadPDF(viewingDocument)}
                 >
-                  Télécharger PDF
+                  {t('downloadPDF')}
                 </Button>
                 {viewingDocument.type === 'customer_sales_order' && (
                   <Button 
@@ -1834,7 +1834,7 @@ const Documents: React.FC = () => {
                     icon={<FileCheck className="w-4 h-4" />}
                     onClick={() => handleCreateInvoice(viewingDocument)}
                   >
-                    Créer Facture
+                    {t('createInvoice')}
                   </Button>
                 )}
               </div>

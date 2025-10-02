@@ -159,7 +159,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <User className="w-4 h-4 inline mr-2" />
-              Nom d'utilisateur
+              {t('username')}
             </label>
             <input
               type="text"
@@ -168,7 +168,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
                 errors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               }`}
-              placeholder="Entrez le nom d'utilisateur"
+              placeholder={t('enterUsername')}
             />
             {errors.username && (
               <p className="text-red-500 text-xs mt-1">{errors.username}</p>
@@ -179,7 +179,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Mail className="w-4 h-4 inline mr-2" />
-              Email
+              {t('email')}
             </label>
             <input
               type="email"
@@ -188,7 +188,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
                 errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               }`}
-              placeholder="Entrez l'email"
+              placeholder={t('enterEmail')}
             />
             {errors.email && (
               <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -199,8 +199,8 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Lock className="w-4 h-4 inline mr-2" />
-              Mot de passe
-              {mode === 'edit' && <span className="text-gray-500 text-xs ml-1">(laisser vide pour ne pas changer)</span>}
+              {t('password')}
+              {mode === 'edit' && <span className="text-gray-500 text-xs ml-1">({t('leaveEmptyToNotChange')})</span>}
             </label>
             <input
               type="password"
@@ -209,7 +209,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
                 errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               }`}
-              placeholder={mode === 'create' ? "Entrez le mot de passe" : "Nouveau mot de passe (optionnel)"}
+              placeholder={mode === 'create' ? t('enterPassword') : t('newPasswordOptional')}
             />
             {errors.password && (
               <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -220,15 +220,15 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <Shield className="w-4 h-4 inline mr-2" />
-              Rôle
+              {t('role')}
             </label>
             <select
               value={formData.role}
               onChange={(e) => handleInputChange('role', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
-              <option value="manager">Manager</option>
-              <option value="admin">Administrateur</option>
+              <option value="manager">{t('manager')}</option>
+              <option value="admin">{t('administrator')}</option>
             </select>
           </div>
 
@@ -236,15 +236,15 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           {mode === 'edit' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Statut
+                {t('status')}
               </label>
               <select
                 value={formData.isActive ? 'active' : 'inactive'}
                 onChange={(e) => handleInputChange('isActive', e.target.value === 'active')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
+                <option value="active">{t('active')}</option>
+                <option value="inactive">{t('inactive')}</option>
               </select>
             </div>
           )}
@@ -254,7 +254,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 <Settings className="w-4 h-4 inline mr-2" />
-                Permissions d'accès
+                {t('accessPermissions')}
               </label>
               <div className="space-y-3 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <div className="grid grid-cols-2 gap-3">
@@ -265,7 +265,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessInventory', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Inventaire</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('inventory')}</span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -274,7 +274,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessSuppliers', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Fournisseurs</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('suppliers')}</span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -283,7 +283,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessClients', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Clients</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('clients')}</span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -292,7 +292,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessDocuments', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Documents</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('documents')}</span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -301,7 +301,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessWaiting', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Liste d'attente</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('waitingList')}</span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -310,7 +310,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessReports', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Rapports</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('reports')}</span>
                   </label>
                   <label className="flex items-center space-x-2">
                     <input
@@ -319,7 +319,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                       onChange={(e) => handlePermissionChange('canAccessSettings', e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Paramètres</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('settings')}</span>
                   </label>
                 </div>
               </div>
@@ -334,14 +334,14 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
               onClick={onClose}
               disabled={loading}
             >
-              Annuler
+              {t('cancel')}
             </Button>
             <Button
               type="submit"
               variant="primary"
               disabled={loading}
             >
-              {loading ? 'Enregistrement...' : (mode === 'create' ? 'Créer' : 'Modifier')}
+              {loading ? t('saving') : (mode === 'create' ? t('create') : t('edit'))}
             </Button>
           </div>
         </form>

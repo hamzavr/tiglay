@@ -802,6 +802,16 @@ const translations = {
     averageBasket: 'متوسط السلة',
     badSales: 'المبيعات السيئة',
     
+    // Reports page additional translations
+    salesReport: 'تقرير المبيعات',
+    inventoryReport: 'تقرير المخزون',
+    profitReport: 'تقرير الأرباح',
+    clientsReport: 'تقرير العملاء',
+    thisWeek: 'هذا الأسبوع',
+    thisMonth: 'هذا الشهر',
+    thisQuarter: 'هذا الربع',
+    thisYear: 'هذا العام',
+    
     // Settings page translations
     companyInformation: 'معلومات الشركة',
     save: 'حفظ',
@@ -816,6 +826,33 @@ const translations = {
     never: 'أبداً',
     active: 'نشط',
     inactive: 'غير نشط',
+    
+    // User Management Modal translations
+    enterUsername: 'أدخل اسم المستخدم',
+    enterEmail: 'أدخل البريد الإلكتروني',
+    password: 'كلمة المرور',
+    leaveEmptyToNotChange: 'اترك فارغاً لتجنب التغيير',
+    enterPassword: 'أدخل كلمة المرور',
+    newPasswordOptional: 'كلمة مرور جديدة (اختيارية)',
+    accessPermissions: 'أذونات الوصول',
+    inventory: 'المخزون',
+    suppliers: 'الموردون',
+    clients: 'العملاء',
+    documents: 'المستندات',
+    waitingList: 'قائمة الانتظار',
+    reports: 'التقارير',
+    settings: 'الإعدادات',
+    saving: 'جاري الحفظ...',
+    
+    // Documents viewing/editing translations
+    downloadPDF: 'تحميل PDF',
+    createInvoice: 'إنشاء فاتورة',
+    
+    // Customer Order Details translations
+    customerOrderDetails: 'تفاصيل طلب العميل',
+    articles: 'المواد',
+    notes: 'ملاحظات',
+    soldProducts: 'المنتجات المباعة',
     
     // Waiting List page translations
     waitingListTitle: 'قائمة انتظار المنتجات',
@@ -1570,6 +1607,16 @@ const translations = {
     averageBasket: 'Panier moyen',
     badSales: 'Mauvaises ventes',
     
+    // Reports page additional translations
+    salesReport: 'Rapport des ventes',
+    inventoryReport: 'Rapport de stock',
+    profitReport: 'Rapport de profits',
+    clientsReport: 'Rapport clients',
+    thisWeek: 'Cette semaine',
+    thisMonth: 'Ce mois',
+    thisQuarter: 'Ce trimestre',
+    thisYear: 'Cette année',
+    
     // Settings page translations
     companyInformation: 'Informations de l\'entreprise',
     save: 'Enregistrer',
@@ -1584,6 +1631,33 @@ const translations = {
     never: 'Jamais',
     active: 'Actif',
     inactive: 'Inactif',
+    
+    // User Management Modal translations
+    enterUsername: 'Entrez le nom d\'utilisateur',
+    enterEmail: 'Entrez l\'email',
+    password: 'Mot de passe',
+    leaveEmptyToNotChange: 'laisser vide pour ne pas changer',
+    enterPassword: 'Entrez le mot de passe',
+    newPasswordOptional: 'Nouveau mot de passe (optionnel)',
+    accessPermissions: 'Permissions d\'accès',
+    inventory: 'Inventaire',
+    suppliers: 'Fournisseurs',
+    clients: 'Clients',
+    documents: 'Documents',
+    waitingList: 'Liste d\'attente',
+    reports: 'Rapports',
+    settings: 'Paramètres',
+    saving: 'Enregistrement...',
+    
+    // Documents viewing/editing translations
+    downloadPDF: 'Télécharger PDF',
+    createInvoice: 'Créer Facture',
+    
+    // Customer Order Details translations
+    customerOrderDetails: 'Détails de la commande client',
+    articles: 'Articles',
+    notes: 'Notes',
+    soldProducts: 'Produits vendus',
     
     // Waiting List page translations
     waitingListTitle: 'Liste d\'attente des produits',

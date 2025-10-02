@@ -138,17 +138,17 @@ const Reports: React.FC = () => {
   const monthlyData = generateMonthlyData();
 
   const reportTypes = {
-    sales: 'Rapport des ventes',
-    inventory: 'Rapport de stock',
-    profit: 'Rapport de profits',
-    clients: 'Rapport clients'
+    sales: t('salesReport'),
+    inventory: t('inventoryReport'),
+    profit: t('profitReport'),
+    clients: t('clientsReport')
   };
 
   const periods = {
-    week: 'Cette semaine',
-    month: 'Ce mois',
-    quarter: 'Ce trimestre',
-    year: 'Cette année'
+    week: t('thisWeek'),
+    month: t('thisMonth'),
+    quarter: t('thisQuarter'),
+    year: t('thisYear')
   };
 
 
