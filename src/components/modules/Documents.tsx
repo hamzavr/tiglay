@@ -128,7 +128,7 @@ const Documents: React.FC = () => {
     reception_slip: t('receptionSlip'),
     stock_entry: t('stockEntry'),
     customer_sales_order: t('customerSalesOrder'),
-    delivery_note: 'Bon de livraison',
+    delivery_note: t('deliveryNote'),
     invoice: t('invoiceDoc')
   };
 
@@ -142,7 +142,7 @@ const Documents: React.FC = () => {
     reception_slip: t('receptionSlip'),
     stock_entry: t('stockEntry'),
     customer_sales_order: t('customerSalesOrder'),
-    delivery_note: 'Bon de livraison',
+    delivery_note: t('deliveryNote'),
     invoice: t('invoiceDoc')
   };
 
@@ -1467,7 +1467,7 @@ const Documents: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Type
+                    {t('type')}
                   </label>
                   <div className="flex items-center">
                     <div className={`${getTypeColor(viewingDocument.type)} mr-2`}>
@@ -1481,14 +1481,14 @@ const Documents: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Numéro
+                    {t('number')}
                   </label>
                   <div className="text-gray-900 dark:text-white font-mono">{viewingDocument.number}</div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Date de création
+                    {t('creationDate')}
                   </label>
                   <div className="text-gray-900 dark:text-white">
                     {new Date(viewingDocument.createdAt).toLocaleDateString('fr-FR')}
@@ -1499,7 +1499,7 @@ const Documents: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Statut
+                    {t('status')}
                   </label>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(viewingDocument.status)}`}>
                     {statusTypes[viewingDocument.status as keyof typeof statusTypes]}
@@ -1508,7 +1508,7 @@ const Documents: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Étape du workflow
+                    {t('workflowStep')}
                   </label>
                   <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded-full">
                     {viewingDocument.workflowStep}/6
@@ -1517,7 +1517,7 @@ const Documents: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Montant total
+                    {t('totalAmount')}
                   </label>
                   <div className="text-xl font-bold text-green-600 dark:text-green-400">
                     {parseAmount(viewingDocument.amount).toLocaleString()} DH
@@ -1530,7 +1530,7 @@ const Documents: React.FC = () => {
                 {viewingDocument.Client && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Client
+                      {t('client')}
                     </label>
                     <div className="text-gray-900 dark:text-white">{viewingDocument.Client.name}</div>
                   </div>
@@ -1539,7 +1539,7 @@ const Documents: React.FC = () => {
                 {viewingDocument.Supplier && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Fournisseur
+                      {t('supplier')}
                     </label>
                     <div className="text-gray-900 dark:text-white">{viewingDocument.Supplier.name}</div>
                   </div>
@@ -1796,7 +1796,7 @@ const Documents: React.FC = () => {
               ) : viewingDocument.notes && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Notes
+                    {t('notes')}
                   </label>
                   <div className="text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                     {viewingDocument.notes}

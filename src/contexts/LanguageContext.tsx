@@ -854,6 +854,14 @@ const translations = {
     notes: 'ملاحظات',
     soldProducts: 'المنتجات المباعة',
     
+    // Document fields translations
+    type: 'النوع',
+    number: 'الرقم',
+    creationDate: 'تاريخ الإنشاء',
+    workflowStep: 'خطوة سير العمل',
+    totalAmount: 'المبلغ الإجمالي',
+    deliveryNote: 'إذن التسليم',
+    
     // Waiting List page translations
     waitingListTitle: 'قائمة انتظار المنتجات',
     total: 'المجموع',
@@ -1658,6 +1666,14 @@ const translations = {
     articles: 'Articles',
     notes: 'Notes',
     soldProducts: 'Produits vendus',
+    
+    // Document fields translations
+    type: 'Type',
+    number: 'Numéro',
+    creationDate: 'Date de création',
+    workflowStep: 'Étape du workflow',
+    totalAmount: 'Montant total',
+    deliveryNote: 'Bon de livraison',
     
     // Waiting List page translations
     waitingListTitle: 'Liste d\'attente des produits',

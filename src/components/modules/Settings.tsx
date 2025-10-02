@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Building, Users, Bell, Globe, Palette, Edit, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, Building, Users, Globe, Palette, Edit, Trash2 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,8 +30,7 @@ const Settings: React.FC = () => {
   const settingsTabs = [
     { id: 'general', label: t('generalSettings'), icon: SettingsIcon },
     { id: 'company', label: t('companyInfo'), icon: Building },
-    ...(hasPermission('canManageUsers') ? [{ id: 'users', label: t('userManagement'), icon: Users }] : []),
-    { id: 'notifications', label: t('notifications'), icon: Bell }
+    ...(hasPermission('canManageUsers') ? [{ id: 'users', label: t('userManagement'), icon: Users }] : [])
   ];
 
   // Charger les utilisateurs au montage du composant
@@ -157,27 +156,6 @@ const Settings: React.FC = () => {
           </button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('currency')}
-          </label>
-          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="MAD">Dirham Marocain (MAD)</option>
-            <option value="EUR">Euro (EUR)</option>
-            <option value="USD">Dollar US (USD)</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {t('dateFormat')}
-          </label>
-          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-          </select>
-        </div>
       </div>
     </div>
   );
@@ -368,34 +346,6 @@ const Settings: React.FC = () => {
     </div>
   );
 
-  const renderNotifications = () => (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white">{t('lowStockAlerts')}</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Recevoir des alertes quand le stock est bas</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" defaultChecked />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white">{t('expirationAlerts')}</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Alertes pour les produits qui expirent bientôt</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" defaultChecked />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-
-      </div>
-    </div>
-  );
 
   const renderContent = () => {
     switch (activeTab) {
@@ -405,8 +355,6 @@ const Settings: React.FC = () => {
         return renderCompanyInfo();
       case 'users':
         return renderUserManagement();
-      case 'notifications':
-        return renderNotifications();
       default:
         return renderGeneralSettings();
     }
