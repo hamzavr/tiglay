@@ -683,7 +683,7 @@ const Clients: React.FC = () => {
               if (clientSales.length === 0) {
                 return (
                   <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-                    Aucun historique trouvé pour ce client.
+                    {t('noSalesFound')}
                   </div>
                 );
               }
@@ -696,20 +696,20 @@ const Clients: React.FC = () => {
                     return (
                       <div key={sale.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
                         <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap justify-between items-center">
-                          <div className="text-sm text-gray-700 dark:text-gray-300">Vente: <span className="font-medium">{sale.id || '—'}</span></div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300">Date: <span className="font-medium">{dateStr}</span></div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300">Total: <span className="font-semibold">{total.toLocaleString()} DH</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('saleNumber')}: <span className="font-medium">{sale.id || '—'}</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('saleDate')}: <span className="font-medium">{dateStr}</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('saleTotal')}: <span className="font-semibold">{total.toLocaleString()} DH</span></div>
                         </div>
                         <div className="overflow-visible">
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-300">
-                                <th className="px-3 py-2 text-left">Nom</th>
-                                <th className="px-3 py-2 text-left">Code</th>
-                                <th className="px-3 py-2 text-left">Unité</th>
-                                <th className="px-3 py-2 text-right">Quantité</th>
-                                <th className="px-3 py-2 text-right">Prix U.</th>
-                                <th className="px-3 py-2 text-right">Total</th>
+                                <th className="px-3 py-2 text-left">{t('saleItemName')}</th>
+                                <th className="px-3 py-2 text-left">{t('saleItemCode')}</th>
+                                <th className="px-3 py-2 text-left">{t('saleItemUnit')}</th>
+                                <th className="px-3 py-2 text-right">{t('saleItemQuantity')}</th>
+                                <th className="px-3 py-2 text-right">{t('saleItemUnitPrice')}</th>
+                                <th className="px-3 py-2 text-right">{t('saleItemTotal')}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -744,7 +744,7 @@ const Clients: React.FC = () => {
 
             <div className="flex justify-end mt-6">
               <Button variant="secondary" onClick={closeHistoryModal}>
-                Fermer
+                {t('close')}
               </Button>
             </div>
           </div>

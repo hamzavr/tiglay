@@ -69,6 +69,8 @@ const Suppliers: React.FC = () => {
   });
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historySupplier, setHistorySupplier] = useState<Supplier | null>(null);
   const [orderForm, setOrderForm] = useState<OrderFormData>({
     deliveryDate: '',
     notes: '',
@@ -78,6 +80,7 @@ const Suppliers: React.FC = () => {
 
   const { data: suppliers = [], loading: suppliersLoading, execute: fetchSuppliers } = useApi(suppliersAPI.getAll);
   const { data: productCatalog = [], execute: fetchProducts } = useApi(productsAPI.getAll);
+  const { data: supplierOrders = [], execute: fetchSupplierOrders } = useApi(suppliersAPI.getOrders);
   const { execute: createSupplier } = useApi(suppliersAPI.create);
   const { execute: updateSupplier } = useApi(suppliersAPI.update);
   const { execute: deleteSupplier } = useApi(suppliersAPI.delete);
@@ -91,6 +94,40 @@ const Suppliers: React.FC = () => {
   // Ensure suppliers is always an array
   const safeSuppliers = Array.isArray(suppliers) ? suppliers : [];
   const filteredSuppliers = safeSuppliers;
+
+  // Function to parse items from notes text
+  const parseItemsFromNotes = (notes: string): any[] => {
+    const items: any[] = [];
+    
+    // Look for "Produits commandés:" section
+    const productsMatch = notes.match(/Produits commandés:\s*([\s\S]*?)(?=Notes:|$)/);
+    if (productsMatch) {
+      const productsText = productsMatch[1];
+      
+      // Split by lines and process each product
+      const lines = productsText.split('\n').filter(line => line.trim());
+      
+      lines.forEach(line => {
+        // Look for pattern: • - - productName [Category]: quantity UNIT × price DH = total DH
+        const match = line.match(/•\s*-\s*-\s*([^[]+)\s*\[([^\]]+)\]:\s*(\d+(?:\.\d+)?)\s*(\w+)\s*×\s*(\d+(?:\.\d+)?)\s*DH\s*=\s*(\d+(?:\.\d+)?)\s*DH/);
+        
+        if (match) {
+          const [, name, category, quantity, unit, unitPrice, total] = match;
+          items.push({
+            name: name.trim(),
+            code: '—', // No code available in this format
+            category: category.trim(),
+            quantity: parseFloat(quantity),
+            unit: unit.trim(),
+            unitPrice: parseFloat(unitPrice),
+            total: parseFloat(total)
+          });
+        }
+      });
+    }
+    
+    return items;
+  };
 
   const openAddModal = () => {
     setEditingSupplier(null);
@@ -136,6 +173,17 @@ const Suppliers: React.FC = () => {
       items: [],
       newProducts: []
     });
+  };
+
+  const openHistoryModal = (supplier: Supplier) => {
+    setHistorySupplier(supplier);
+    fetchSupplierOrders(supplier.id);
+    setShowHistoryModal(true);
+  };
+
+  const closeHistoryModal = () => {
+    setShowHistoryModal(false);
+    setHistorySupplier(null);
   };
 
   const addOrderItem = () => {
@@ -429,7 +477,12 @@ const Suppliers: React.FC = () => {
 
               {/* Actions */}
               <div className="flex space-x-2">
-                <Button variant="secondary" size="sm" className="flex-1">
+                <Button 
+                  variant="secondary" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => openHistoryModal(supplier)}
+                >
                   {t('viewOrders')}
                 </Button>
                 <Button 
@@ -949,6 +1002,133 @@ const Suppliers: React.FC = () => {
                 disabled={orderForm.items.length === 0 && orderForm.newProducts.length === 0}
               >
                 Créer Commande
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Supplier Orders History Modal */}
+      {showHistoryModal && historySupplier && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {t('ordersHistory')} - {historySupplier.name}
+              </h3>
+              <button
+                onClick={closeHistoryModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {(() => {
+              const allOrders: any[] = Array.isArray(supplierOrders) ? (supplierOrders as any) : [];
+              if (allOrders.length === 0) {
+                return (
+                  <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                    {t('noOrdersFound')}
+                  </div>
+                );
+              }
+              return (
+                <div className="space-y-4">
+                  {allOrders.map((order) => {
+                    // Parse items from JSON if it's a string, otherwise use array
+                    let items: any[] = [];
+                    if (typeof order.items === 'string') {
+                      try {
+                        items = JSON.parse(order.items);
+                      } catch (e) {
+                        console.error('Error parsing items JSON:', e);
+                        items = [];
+                      }
+                    } else if (Array.isArray(order.items)) {
+                      items = order.items;
+                    }
+                    
+                    // If no items from items field, try to parse from notes
+                    if (items.length === 0 && order.notes) {
+                      items = parseItemsFromNotes(order.notes);
+                    }
+                    
+                    const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleString('fr-FR') : '—';
+                    const total = typeof order.amount === 'number' ? order.amount : (Number(order.amount) || 0);
+                    const status = order.status || 'draft';
+                    const statusColors = {
+                      draft: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400',
+                      sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+                      paid: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
+                      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                    };
+                    return (
+                      <div key={order.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap justify-between items-center">
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('orderNumber')}: <span className="font-medium">{order.number || order.id || '—'}</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('orderDate')}: <span className="font-medium">{dateStr}</span></div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('orderTotal')}: <span className="font-semibold">{total.toLocaleString()} DH</span></div>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
+                            {status === 'draft' ? t('orderStatusDraft') : 
+                             status === 'sent' ? t('orderStatusSent') : 
+                             status === 'paid' ? t('orderStatusPaid') : 
+                             status === 'cancelled' ? t('orderStatusCancelled') : status}
+                          </span>
+                        </div>
+                        {items.length > 0 ? (
+                          <div className="overflow-visible">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-300">
+                                  <th className="px-3 py-2 text-left">{t('orderItemName')}</th>
+                                  <th className="px-3 py-2 text-left">{t('orderItemCode')}</th>
+                                  <th className="px-3 py-2 text-left">{t('orderItemCategory')}</th>
+                                  <th className="px-3 py-2 text-right">{t('orderItemQuantity')}</th>
+                                  <th className="px-3 py-2 text-right">{t('orderItemUnit')}</th>
+                                  <th className="px-3 py-2 text-right">{t('orderItemUnitPrice')}</th>
+                                  <th className="px-3 py-2 text-right">{t('orderItemTotal')}</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {items.map((item, idx) => {
+                                  const name = item.name || '—';
+                                  const code = item.code || '—';
+                                  const category = item.category || '—';
+                                  const unit = item.unit || '—';
+                                  const qty = typeof item.quantity === 'number' ? item.quantity : (Number(item.quantity) || 0);
+                                  const price = typeof item.unitPrice === 'number' ? item.unitPrice : (Number(item.unitPrice) || 0);
+                                  const rowTotal = typeof item.total === 'number' ? item.total : (qty * price);
+                                  return (
+                                    <tr key={idx}>
+                                      <td className="px-3 py-2">{name}</td>
+                                      <td className="px-3 py-2">{code}</td>
+                                      <td className="px-3 py-2">{category}</td>
+                                      <td className="px-3 py-2 text-right">{qty}</td>
+                                      <td className="px-3 py-2 text-right">{unit}</td>
+                                      <td className="px-3 py-2 text-right">{price.toLocaleString()} DH</td>
+                                      <td className="px-3 py-2 text-right">{rowTotal.toLocaleString()} DH</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                            {t('noOrdersFound')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div className="flex justify-end mt-6">
+              <Button variant="secondary" onClick={closeHistoryModal}>
+                {t('close')}
               </Button>
             </div>
           </div>

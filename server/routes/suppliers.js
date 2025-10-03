@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
-const { Supplier, Product } = require('../models');
+const { Supplier, Product, Document } = require('../models');
 const { auth, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -104,6 +104,30 @@ router.delete('/:id', [auth, authorize('admin', 'manager')], async (req, res) =>
 
     await supplier.update({ isActive: false });
     res.json({ message: 'Supplier deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get supplier orders
+router.get('/:id/orders', auth, async (req, res) => {
+  try {
+    const supplier = await Supplier.findByPk(req.params.id);
+    
+    if (!supplier) {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+
+    const orders = await Document.findAll({
+      where: {
+        supplierId: req.params.id,
+        type: 'supplier_purchase_order'
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json(orders);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

@@ -65,6 +65,7 @@ export const suppliersAPI = {
   create: (data: any) => api.post('/suppliers', data),
   update: (id: string, data: any) => api.put(`/suppliers/${id}`, data),
   delete: (id: string) => api.delete(`/suppliers/${id}`),
+  getOrders: (id: string) => api.get(`/suppliers/${id}/orders`),
 };
 
 // Clients API
