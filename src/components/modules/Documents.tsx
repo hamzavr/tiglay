@@ -48,6 +48,7 @@ interface DocumentFormData {
     unitPrice: number;
     total: number;
   }>;
+  enteredQuantities?: Record<string, number>;
 }
 
 interface Client {
@@ -76,10 +77,9 @@ const Documents: React.FC = () => {
     amount: 0,
     status: 'draft',
     notes: '',
-    items: []
+    items: [],
+    enteredQuantities: {}
   });
-  const [missingQuantities, setMissingQuantities] = useState<Record<string, number>>({});
-  const [surplusQuantities, setSurplusQuantities] = useState<Record<string, number>>({});
 
   // Fetch documents from API
   const { data: documents, loading: documentsLoading, error: documentsError, execute: fetchDocuments } = useApi(documentsAPI.getAll);
@@ -233,7 +233,8 @@ const Documents: React.FC = () => {
       amount: 0,
       status: 'draft',
       notes: '',
-      items: []
+      items: [],
+      enteredQuantities: {}
     });
     setIsModalOpen(true);
   };
@@ -242,6 +243,20 @@ const Documents: React.FC = () => {
     console.log('Opening edit modal for document:', document);
     console.log('Document items for editing:', document.items);
     setEditingDocument(document);
+    
+    // Charger les quantités entrées sauvegardées
+    let savedEnteredQuantities = {};
+    if (document.type === 'supplier_purchase_order') {
+      try {
+        const saved = localStorage.getItem(`enteredQuantities_${document.id}`);
+        if (saved) {
+          savedEnteredQuantities = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Error loading saved entered quantities:', e);
+      }
+    }
+    
     setFormData({
       type: document.type,
       clientId: document.Client?.id || '',
@@ -249,7 +264,8 @@ const Documents: React.FC = () => {
       amount: document.amount,
       status: document.status,
       notes: document.notes || '',
-      items: document.items || []
+      items: document.items || [],
+      enteredQuantities: savedEnteredQuantities
     });
     setIsModalOpen(true);
   };
@@ -345,15 +361,67 @@ const Documents: React.FC = () => {
     }, 0);
   };
 
+  // Fonction pour recalculer et mettre à jour le total et les informations des produits
+  const updateProductInfo = (productIndex: number, field: string, value: any) => {
+    const lines = formData.notes.split('\n');
+    const productsStartIndex = lines.findIndex(line => line.includes('Produits commandés:'));
+    const notesStartIndex = lines.findIndex(line => line.includes('Notes:'));
+    
+    if (productsStartIndex === -1 || notesStartIndex === -1) return;
+    
+    const products = lines.slice(productsStartIndex + 1, notesStartIndex).filter(line => line.trim().startsWith('•'));
+    if (productIndex >= products.length) return;
+
+    const product = products[productIndex];
+    const nameCodeCategoryMatch = product.match(/•\s*(.+?):/);
+    if (!nameCodeCategoryMatch) return;
+
+    const nameCodeCategory = nameCodeCategoryMatch[1];
+    const nameCodeCategoryParts = nameCodeCategory.split(' [');
+    const nameCode = nameCodeCategoryParts[0];
+    const category = nameCodeCategoryParts[1] ? nameCodeCategoryParts[1].replace(']', '') : '';
+
+    let newProduct = product;
+    
+    if (field === 'nameCode') {
+      const newNameCodeCategory = `${value} [${category}]`;
+      newProduct = product.replace(nameCodeCategory, newNameCodeCategory);
+    } else if (field === 'category') {
+      const newNameCodeCategory = `${nameCode} [${value}]`;
+      newProduct = product.replace(nameCodeCategory, newNameCodeCategory);
+    } else if (field === 'quantity') {
+      const quantityUnitMatch = product.match(/:\s*(\d+)\s*(\w+)/);
+      if (quantityUnitMatch) {
+        const unit = quantityUnitMatch[2];
+        const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
+        const price = priceMatch ? priceMatch[1] : '0';
+        const total = (parseFloat(value) * parseFloat(price)).toFixed(2);
+        newProduct = product.replace(quantityUnitMatch[0], `: ${value} ${unit}`).replace(/=\s*[\d.]+\s*DH/, `= ${total} DH`);
+      }
+    } else if (field === 'unitPrice') {
+      const quantityUnitMatch = product.match(/:\s*(\d+)\s*(\w+)/);
+      if (quantityUnitMatch) {
+        const quantity = quantityUnitMatch[1];
+        const unit = quantityUnitMatch[2];
+        const total = (parseFloat(quantity) * parseFloat(value)).toFixed(2);
+        newProduct = product.replace(/×\s*[\d.]+\s*DH/, `× ${value} DH`).replace(/=\s*[\d.]+\s*DH/, `= ${total} DH`);
+      }
+    }
+
+    // Remplacer le produit dans les notes
+    const newNotes = formData.notes.replace(product, newProduct);
+    setFormData({ ...formData, notes: newNotes });
+  };
+
   // Ajouter un produit à la liste d'attente (localStorage)
   type WaitingAddResult = 'added' | 'updated' | 'exists' | 'error';
+
 
   const addProductToWaitingList = (item: {
     name: string;
     code: string;
     quantity: number;
-    missingQuantity?: number;
-    surplusQuantity?: number;
+    remainingQuantity?: number;
     unit: string;
     unitPrice: number;
     category: string;
@@ -373,8 +441,7 @@ const Documents: React.FC = () => {
           ...existing,
           // toujours rafraîchir quantités/prix éventuels
           quantity: item.quantity,
-          missingQuantity: item.missingQuantity,
-          surplusQuantity: item.surplusQuantity,
+          remainingQuantity: item.remainingQuantity,
           unit: item.unit,
           unitPrice: item.unitPrice,
           flag,
@@ -389,8 +456,7 @@ const Documents: React.FC = () => {
         name: item.name,
         code: item.code,
         quantity: item.quantity,
-        missingQuantity: item.missingQuantity,
-        surplusQuantity: item.surplusQuantity,
+        remainingQuantity: item.remainingQuantity,
         unit: item.unit,
         unitPrice: item.unitPrice,
         category: item.category,
@@ -430,12 +496,27 @@ const Documents: React.FC = () => {
           getFormTotal()
       };
 
+      // Enregistrer les quantités entrées pour les documents de type supplier_purchase_order
+      if (formData.type === 'supplier_purchase_order' && formData.enteredQuantities) {
+        localStorage.setItem(`enteredQuantities_${editingDocument?.id || 'new'}`, JSON.stringify(formData.enteredQuantities));
+      }
+
       // Debug: afficher les données envoyées
       console.log('Document data to send:', documentData);
       console.log('Editing document:', editingDocument);
 
       if (editingDocument) {
         await updateDocument(editingDocument.id, documentData);
+        // Mettre à jour viewingDocument si c'est le même document
+        if (viewingDocument && viewingDocument.id === editingDocument.id) {
+          // Recharger le document depuis la liste mise à jour
+          setTimeout(() => {
+            const updatedDoc = documents.find(doc => doc.id === editingDocument.id);
+            if (updatedDoc) {
+              setViewingDocument(updatedDoc);
+            }
+          }, 100);
+        }
       } else {
         await createDocument(documentData);
       }
@@ -1083,7 +1164,7 @@ const Documents: React.FC = () => {
                                   const category = nameCodeCategoryParts[1] ? nameCodeCategoryParts[1].replace(']', '') : '';
                                   
                                   return (
-                                    <div key={index} className="grid grid-cols-1 md:grid-cols-8 gap-2 p-3 bg-white dark:bg-gray-600 rounded border">
+                                    <div key={index} className="grid grid-cols-2 md:grid-cols-8 gap-2 p-2 bg-white dark:bg-gray-600 rounded border">
                                       <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">{t('nameCode')}</label>
                                         <input
@@ -1091,11 +1172,9 @@ const Documents: React.FC = () => {
                                           value={nameCode}
                                           onChange={(e) => {
                                             const newNameCode = e.target.value;
-                                            const newProduct = product.replace(nameCode, newNameCode);
-                                            const newNotes = notes.replace(product, newProduct);
-                                            setFormData({ ...formData, notes: newNotes });
+                                            updateProductInfo(index, 'nameCode', newNameCode);
                                           }}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
                                       </div>
                                       <div>
@@ -1104,12 +1183,9 @@ const Documents: React.FC = () => {
                                           value={category}
                                           onChange={(e) => {
                                             const newCategory = e.target.value;
-                                            const newNameCodeCategory = `${nameCode} [${newCategory}]`;
-                                            const newProduct = product.replace(nameCodeCategory, newNameCodeCategory);
-                                            const newNotes = notes.replace(product, newProduct);
-                                            setFormData({ ...formData, notes: newNotes });
+                                            updateProductInfo(index, 'category', newCategory);
                                           }}
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         >
                                           <option value="">{t('select')}</option>
                                           <option value="Ciment">Ciment</option>
@@ -1129,7 +1205,7 @@ const Documents: React.FC = () => {
                                         </select>
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('quantity')}</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité demandée</label>
                                         <input
                                           type="text"
                                           value={quantityUnit[0] || ''}
@@ -1137,21 +1213,11 @@ const Documents: React.FC = () => {
                                             const newQuantity = e.target.value;
                                             // Validation: seulement des nombres entiers
                                             if (newQuantity === '' || /^\d+$/.test(newQuantity)) {
-                                              const unit = quantityUnit[1] || 'U';
-                                              const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
-                                              const price = priceMatch ? priceMatch[1] : '0';
-                                              const total = (parseFloat(newQuantity) * parseFloat(price)).toFixed(2);
-                                              
-                                              // Reconstruire la ligne du produit
-                                              const newProductLine = `• ${nameCodeCategory}: ${newQuantity} ${unit} × ${price} DH = ${total} DH`;
-                                              
-                                              // Remplacer dans les notes
-                                              const newNotes = notes.replace(product, newProductLine);
-                                              setFormData({ ...formData, notes: newNotes });
+                                              updateProductInfo(index, 'quantity', newQuantity);
                                             }
                                           }}
                                           placeholder="1"
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
                                       </div>
                                       <div>
@@ -1167,88 +1233,47 @@ const Documents: React.FC = () => {
                                             const newPrice = e.target.value;
                                             // Validation: seulement des nombres et un point décimal
                                             if (newPrice === '' || /^\d*\.?\d*$/.test(newPrice)) {
-                                              const quantity = quantityUnit[0] || '1';
-                                              const unit = quantityUnit[1] || 'U';
-                                              const price = parseFloat(newPrice) || 0;
-                                              const total = (parseFloat(quantity) * price).toFixed(2);
-                                              
-                                              // Reconstruire la ligne du produit
-                                              const newProductLine = `• ${nameCodeCategory}: ${quantity} ${unit} × ${newPrice} DH = ${total} DH`;
-                                              
-                                              // Remplacer dans les notes
-                                              const newNotes = notes.replace(product, newProductLine);
-                                              setFormData({ ...formData, notes: newNotes });
+                                              updateProductInfo(index, 'unitPrice', newPrice);
                                             }
                                           }}
                                           placeholder="0.00"
-                                          className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('missingQuantity')}</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité Entrée</label>
                                         <input
                                           type="number"
-                                          value={missingQuantities[`${nameCode}-${index}`] || ''}
+                                          value={formData.enteredQuantities?.[`${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`] || ''}
                                           onChange={(e) => {
-                                            const productKey = `${nameCode}-${index}`;
-                                            const missingQty = parseInt(e.target.value) || 0;
+                                            const productKey = `${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`;
+                                            const enteredQty = parseInt(e.target.value) || 0;
                                             
-                                            // Si on saisit une quantité manquante, vider la quantité surplus
-                                            if (missingQty > 0) {
-                                              setSurplusQuantities(prev => {
-                                                const newState = { ...prev };
-                                                delete newState[productKey];
-                                                return newState;
-                                              });
-                                            }
+                                            console.log('Debug - Setting enteredQty:', enteredQty, 'for key:', productKey);
                                             
-                                            setMissingQuantities(prev => ({
+                                            setFormData(prev => ({
                                               ...prev,
-                                              [productKey]: missingQty
+                                              enteredQuantities: {
+                                                ...prev.enteredQuantities,
+                                                [productKey]: enteredQty
+                                              }
                                             }));
                                           }}
                                           placeholder="0"
                                           min="0"
-                                          disabled={surplusQuantities[`${nameCode}-${index}`] > 0}
-                                          className={`w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white ${
-                                            surplusQuantities[`${nameCode}-${index}`] > 0
-                                              ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed'
-                                              : 'bg-white dark:bg-gray-700'
-                                          }`}
+                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('surplusQuantity')}</label>
-                                        <input
-                                          type="number"
-                                          value={surplusQuantities[`${nameCode}-${index}`] || ''}
-                                          onChange={(e) => {
-                                            const productKey = `${nameCode}-${index}`;
-                                            const surplusQty = parseInt(e.target.value) || 0;
-                                            
-                                            // Si on saisit une quantité surplus, vider la quantité manquante
-                                            if (surplusQty > 0) {
-                                              setMissingQuantities(prev => {
-                                                const newState = { ...prev };
-                                                delete newState[productKey];
-                                                return newState;
-                                              });
-                                            }
-                                            
-                                            setSurplusQuantities(prev => ({
-                                              ...prev,
-                                              [productKey]: surplusQty
-                                            }));
-                                          }}
-                                          placeholder="0"
-                                          min="0"
-                                          disabled={missingQuantities[`${nameCode}-${index}`] > 0}
-                                          className={`w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded text-gray-900 dark:text-white ${
-                                            missingQuantities[`${nameCode}-${index}`] > 0
-                                              ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed'
-                                              : 'bg-white dark:bg-gray-700'
-                                          }`}
-                                        />
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité restante</label>
+                                        <div className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white">
+                                          {(() => {
+                                            const requestedQty = parseInt(quantityUnit[0]) || 0;
+                                            const enteredQty = formData.enteredQuantities?.[`${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`] || 0;
+                                            const remaining = requestedQty - enteredQty;
+                                            return remaining < 0 ? Math.abs(remaining) : remaining;
+                                          })()}
+                                        </div>
                                       </div>
                                       <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">{t('total')}</label>
@@ -1259,132 +1284,68 @@ const Documents: React.FC = () => {
                                           })()}
                                         </div>
                                       </div>
-                                      <div className="flex items-end gap-2 flex-wrap">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
-                                            const productData = {
-                                              name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
-                                              code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
-                                              quantity: parseInt(quantityUnit[0]) || 0,
-                                              unit: quantityUnit[1] || 'U',
-                                              unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
-                                              category: category || 'Autre'
-                                            };
-                                            const res = addProductToWaitingList(productData, 'normal');
-                                            if (res === 'added') alert('Produit bien ajouté à la liste d\'attente');
-                                            else if (res === 'updated') alert('Produit déjà dans la liste, informations mises à jour');
-                                            else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
-                                          }}
-                                          className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors min-w-[140px] text-center"
-                                        >
-                                          {t('addToWaitingList')}
-                                        </button>
-
-                                        {missingQuantities[`${nameCode}-${index}`] > 0 && (
+                                      <div>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">Actions</label>
+                                        <div className="flex gap-1">
                                           <button
                                             type="button"
                                             onClick={() => {
                                               const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
+                                              const requestedQty = parseInt(quantityUnit[0]) || 0;
+                                              const productKey = `${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`;
+                                              const enteredQty = formData.enteredQuantities?.[productKey] || 0;
+                                              const remaining = requestedQty - enteredQty;
+                                              
+                                              // Debug
+                                              console.log('Debug - productKey:', productKey);
+                                              console.log('Debug - enteredQty:', enteredQty);
+                                              console.log('Debug - formData.enteredQuantities:', formData.enteredQuantities);
+                                              
+                                              // Vérifier si la quantité entrée est > 0
+                                              if (enteredQty <= 0) {
+                                                alert('Veuillez d\'abord saisir une quantité entrée avant d\'ajouter à la liste d\'attente');
+                                                return;
+                                              }
+                                              
+                                              // Ajouter le produit à la liste d'attente
+                                              // Si quantité restante est négative, utiliser quantité demandée, sinon quantité entrée
+                                              const quantityToUse = remaining < 0 ? requestedQty : enteredQty;
+                                              const remainingToUse = remaining < 0 ? Math.abs(remaining) : remaining;
+                                              
                                               const productData = {
                                                 name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
                                                 code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
-                                                quantity: parseInt(quantityUnit[0]) || 0,
-                                                missingQuantity: missingQuantities[`${nameCode}-${index}`],
+                                                quantity: quantityToUse, // Quantité demandée si restante négative, sinon quantité entrée
+                                                remainingQuantity: remainingToUse, // Valeur absolue si négative
                                                 unit: quantityUnit[1] || 'U',
                                                 unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
                                                 category: category || 'Autre'
                                               };
-                                              const res = addProductToWaitingList(productData, 'missing');
-                                              if (res === 'added') alert('Produit ajouté avec quantité manquante à la liste d\'attente');
-                                              else if (res === 'updated') alert('Produit déjà dans la liste, drapeau mis à jour (manquante)');
+                                              const res = addProductToWaitingList(productData, 'normal');
+                                              if (res === 'added') {
+                                                const message = remaining < 0 
+                                                  ? 'Produit ajouté à la liste d\'attente avec quantité demandée comme "La Quantité" (quantité restante négative)'
+                                                  : 'Produit ajouté à la liste d\'attente avec quantité entrée comme "La Quantité"';
+                                                alert(message);
+                                              } else if (res === 'updated') alert('Produit déjà dans la liste, informations mises à jour');
                                               else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
                                             }}
-                                            className="px-4 py-2 text-sm bg-yellow-600 hover:bg-yellow-700 text-white rounded-md transition-colors min-w-[180px] text-center"
+                                            className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex-1"
                                           >
-                                            {t('addWithMissingQuantity')}
+                                            Ajouter
                                           </button>
-                                        )}
-
-                                        {surplusQuantities[`${nameCode}-${index}`] > 0 && (
                                           <button
                                             type="button"
                                             onClick={() => {
-                                              const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
-                                              const productData = {
-                                                name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
-                                                code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
-                                                quantity: parseInt(quantityUnit[0]) || 0,
-                                                surplusQuantity: surplusQuantities[`${nameCode}-${index}`],
-                                                unit: quantityUnit[1] || 'U',
-                                                unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
-                                                category: category || 'Autre'
-                                              };
-                                              const res = addProductToWaitingList(productData, 'surplus');
-                                              if (res === 'added') alert('Produit ajouté avec quantité surplus à la liste d\'attente');
-                                              else if (res === 'updated') alert('Produit déjà dans la liste, drapeau mis à jour (surplus)');
-                                              else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
+                                              const newNotes = notes.replace(product + '\n', '').replace(product, '');
+                                              setFormData({ ...formData, notes: newNotes });
+                                              alert('Produit rejeté');
                                             }}
-                                            className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors min-w-[180px] text-center"
+                                            className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors flex-1"
                                           >
-                                            {t('addWithSurplusQuantity')}
+                                            Rejeter
                                           </button>
-                                        )}
-
-                                        {/* Boutons pour quantités incorrectes */}
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const productKey = `${nameCode}-${index}`;
-                                            setMissingQuantities(prev => ({
-                                              ...prev,
-                                              [productKey]: parseInt(quantityUnit[0]) || 0
-                                            }));
-                                            // Vider la quantité surplus si elle existe
-                                            setSurplusQuantities(prev => {
-                                              const newState = { ...prev };
-                                              delete newState[productKey];
-                                              return newState;
-                                            });
-                                          }}
-                                          className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
-                                        >
-                                          {t('missingQuantity')}
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const productKey = `${nameCode}-${index}`;
-                                            setSurplusQuantities(prev => ({
-                                              ...prev,
-                                              [productKey]: parseInt(quantityUnit[0]) || 0
-                                            }));
-                                            // Vider la quantité manquante si elle existe
-                                            setMissingQuantities(prev => {
-                                              const newState = { ...prev };
-                                              delete newState[productKey];
-                                              return newState;
-                                            });
-                                          }}
-                                          className="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors min-w-[140px] text-center"
-                                        >
-                                          {t('surplusQuantity')}
-                                        </button>
-
-                                        {/* Bouton Rejeter indépendant */}
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newNotes = notes.replace(product + '\n', '').replace(product, '');
-                                            setFormData({ ...formData, notes: newNotes });
-                                            alert('Produit rejeté');
-                                          }}
-                                          className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors min-w-[140px] text-center"
-                                        >
-                                          Rejeter
-                                        </button>
+                                        </div>
                                       </div>
                                     </div>
                                   );

@@ -8,8 +8,7 @@ interface WaitingItem {
   name: string;
   code: string;
   quantity: number;
-  missingQuantity?: number;
-  surplusQuantity?: number;
+  remainingQuantity?: number;
   unit: string;
   unitPrice: number;
   category: string;
@@ -73,13 +72,11 @@ const WaitingList: React.FC = () => {
                 <th className="text-left px-4 py-2">{t('name')}</th>
                 <th className="text-left px-4 py-2">{t('code')}</th>
                 <th className="text-left px-4 py-2">{t('category')}</th>
-                <th className="text-left px-4 py-2">{t('stateQuantity')}</th>
-                <th className="text-left px-4 py-2">{t('missingQuantity')}</th>
-                <th className="text-left px-4 py-2">{t('surplusQuantity')}</th>
+                <th className="text-left px-4 py-2">La Quantité</th>
+                <th className="text-left px-4 py-2">Quantité restante</th>
                 <th className="text-left px-4 py-2">{t('unit')}</th>
                 <th className="text-left px-4 py-2">{t('unitPrice')}</th>
                 <th className="text-left px-4 py-2">{t('totalPrice')}</th>
-                <th className="text-left px-4 py-2">{t('quantity')}</th>
                 <th className="text-left px-4 py-2">{t('actions')}</th>
               </tr>
             </thead>
@@ -92,47 +89,20 @@ const WaitingList: React.FC = () => {
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.quantity}</td>
                   <td className="px-4 py-2">
                     <span className={`text-sm font-medium ${
-                      item.missingQuantity && item.missingQuantity > 0
-                        ? 'text-red-600 dark:text-red-400' 
+                      item.remainingQuantity && item.remainingQuantity > 0
+                        ? 'text-orange-600 dark:text-orange-400' 
                         : 'text-gray-500 dark:text-gray-400'
                     }`}>
-                      {item.missingQuantity || 0}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`text-sm font-medium ${
-                      item.surplusQuantity && item.surplusQuantity > 0
-                        ? 'text-purple-600 dark:text-purple-400' 
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {item.surplusQuantity || 0}
+                      {item.remainingQuantity ? Math.abs(item.remainingQuantity) : 0}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.unit}</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{(item.quantity * item.unitPrice).toLocaleString()} DH</td>
                   <td className="px-4 py-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${item.flag === 'missing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200' : item.flag === 'surplus' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'}`}>
-                      {item.flag === 'missing' ? t('missing') : item.flag === 'surplus' ? t('surplus') : t('normal')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
-                          // Vérifier si le produit a une quantité manquante
-                          if (item.missingQuantity && item.missingQuantity > 0) {
-                            alert(t('cannotAddToInventoryMissing'));
-                            return;
-                          }
-                          
-                          // Pour les produits avec quantité surplus, on ajoute seulement la quantité normale
-                          // et on garde la quantité surplus dans la liste d'attente
-                          if (item.surplusQuantity && item.surplusQuantity > 0) {
-                            const confirmAdd = confirm(t('confirmAddNormalQuantity').replace('{surplusQuantity}', item.surplusQuantity.toString()).replace('{quantity}', item.quantity.toString()));
-                            if (!confirmAdd) return;
-                          }
-                          
                           // Pré-remplir les données pour l'inventaire
                           const prefilled = {
                             name: item.name,
@@ -147,16 +117,41 @@ const WaitingList: React.FC = () => {
                           // Naviguer à l'inventaire
                           window.location.hash = '#inventory';
                         }}
-                        disabled={item.missingQuantity && item.missingQuantity > 0}
+                        className="px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        l'inventaire
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Logique du bouton Compléter
+                          if (item.remainingQuantity && item.remainingQuantity > 0) {
+                            const updatedItems = items.map(i => 
+                              i.id === item.id 
+                                ? { 
+                                    ...i, 
+                                    quantity: i.quantity + i.remainingQuantity, 
+                                    remainingQuantity: 0 
+                                  }
+                                : i
+                            );
+                            setItems(updatedItems);
+                            
+                            // Sauvegarder dans localStorage
+                            localStorage.setItem('waitingListProducts', JSON.stringify(updatedItems));
+                            
+                            alert('Quantité restante ajoutée à "La Quantité"');
+                          } else {
+                            alert('Aucune quantité restante à compléter');
+                          }
+                        }}
+                        disabled={!item.remainingQuantity || item.remainingQuantity <= 0}
                         className={`px-2 py-1 text-xs rounded ${
-                          item.missingQuantity && item.missingQuantity > 0
-                            ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                            : item.surplusQuantity && item.surplusQuantity > 0
-                            ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          item.remainingQuantity && item.remainingQuantity > 0
+                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                         }`}
                       >
-                        {item.surplusQuantity && item.surplusQuantity > 0 ? t('addNormalQuantity') : t('addToInventory')}
+                        Compléter
                       </button>
                       <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">{t('remove')}</button>
                     </div>

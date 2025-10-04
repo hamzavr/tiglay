@@ -30,6 +30,7 @@ interface SupplierFormData {
 interface OrderItem {
   id: string;
   name: string;
+  code: string;
   category?: string;
   quantity: number;
   unit: string;
@@ -190,6 +191,7 @@ const Suppliers: React.FC = () => {
     const newItem: OrderItem = {
       id: `item-${Date.now()}`,
       name: '',
+      code: '',
       category: '',
       quantity: 1,
       unit: 'U',
@@ -263,6 +265,12 @@ const Suppliers: React.FC = () => {
       items: prev.items.map(item => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
+          
+          // Générer automatiquement le code quand la catégorie change
+          if (field === 'category' && value) {
+            updatedItem.code = generateProductCode(value);
+          }
+          
           // Recalculer le total
           if (field === 'quantity' || field === 'unitPrice') {
             updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
@@ -682,6 +690,9 @@ const Suppliers: React.FC = () => {
                                   {t('name')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  {t('code')}
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   {t('category')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -713,10 +724,12 @@ const Suppliers: React.FC = () => {
                                         onChange={(e) => {
                                           const val = e.target.value;
                                           updateOrderItem(item.id, 'name', val);
-                                          // si on trouve un produit exact, pré-remplir code/prix
+                                          // si on trouve un produit exact, pré-remplir code/prix/catégorie
                                           const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
                                           const found = catalog.find(p => String(p.name || '').toLowerCase() === String(val || '').toLowerCase());
                                           if (found) {
+                                            updateOrderItem(item.id, 'code', found.code || item.code);
+                                            updateOrderItem(item.id, 'category', found.category || item.category);
                                             updateOrderItem(item.id, 'unitPrice', Number(found.buyPrice) || item.unitPrice);
                                           }
                                         }}
@@ -729,6 +742,15 @@ const Suppliers: React.FC = () => {
                                         ))}
                                       </datalist>
                                     </div>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      value={item.code}
+                                      onChange={(e) => updateOrderItem(item.id, 'code', e.target.value)}
+                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
+                                      placeholder="Code produit"
+                                    />
                                   </td>
                                   <td className="px-3 py-2">
                                     <select
