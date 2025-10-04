@@ -30,6 +30,7 @@ interface CompanyInfo {
 class PDFGenerator {
   private doc: jsPDF;
   private companyInfo: CompanyInfo;
+  private readonly COMPANY_NAME = 'BRIQUIN'; // Nom constant dans toutes les langues
 
   constructor(companyInfo: CompanyInfo) {
     // A4 format: 210mm x 297mm
@@ -74,11 +75,12 @@ class PDFGenerator {
     const margin = 15;
     const tableWidth = pageWidth - (margin * 2);
     const colWidth = tableWidth / headers.length;
+    const tableHeight = 8 + (data.length * 8);
     
     // Draw table border
-    this.doc.rect(margin, startY, tableWidth, 8 + (data.length * 8), 'S');
+    this.doc.rect(margin, startY, tableWidth, tableHeight, 'S');
     
-    // Draw headers - all with same style as "Code"
+    // Draw headers
     headers.forEach((header, index) => {
       const x = margin + (index * colWidth);
       
@@ -86,32 +88,29 @@ class PDFGenerator {
       this.doc.setFillColor(240, 240, 240);
       this.doc.rect(x, startY, colWidth, 8, 'F');
       
-      // Draw vertical lines
-      if (index > 0) {
-        this.doc.line(x, startY, x, startY + 8);
-      }
-      
-      // Add header text - ensure it's visible
+      // Add header text
       this.doc.setTextColor(0, 0, 0);
       this.doc.setFontSize(8);
       const textX = x + (colWidth / 2);
       this.doc.text(header, textX, startY + 5, { align: 'center' });
     });
 
+    // Draw vertical lines for columns
+    for (let i = 1; i < headers.length; i++) {
+      const x = margin + (i * colWidth);
+      this.doc.line(x, startY, x, startY + tableHeight);
+    }
+
     // Draw data rows
     this.doc.setTextColor(0, 0, 0);
     data.forEach((row, rowIndex) => {
       const y = startY + 8 + (rowIndex * 8);
+      
+      // Draw horizontal line for each row
+      this.doc.line(margin, y, margin + tableWidth, y);
+      
       row.forEach((cell, colIndex) => {
         const x = margin + (colIndex * colWidth);
-        
-        // Draw vertical lines
-        if (colIndex > 0) {
-          this.doc.line(x, y, x, y + 8);
-        }
-        
-        // Draw horizontal line
-        this.doc.line(margin, y, margin + tableWidth, y);
         
         const text = typeof cell === 'number' ? cell.toLocaleString() : cell;
         const textX = x + (colWidth / 2);
@@ -152,13 +151,11 @@ class PDFGenerator {
     this.addFrenchText('BON DE LIVRAISON', 105, 25, 16, 'center');
     
     // Company name
-    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
+    this.addFrenchText(this.COMPANY_NAME, 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
     
-    // Vendeur section
-    this.addFrenchText('Vendeur: Nour Eddine', 15, 58, 8);
     
     // Document details in three columns
     const docDetailsY = 70;
@@ -221,13 +218,11 @@ class PDFGenerator {
     this.addFrenchText('BON DE COMMANDE CLIENT', 105, 25, 16, 'center');
     
     // Company name
-    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
+    this.addFrenchText(this.COMPANY_NAME, 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
     
-    // Vendeur section
-    this.addFrenchText('Vendeur: Nour Eddine', 15, 58, 8);
     
     // Document details in three columns
     const docDetailsY = 70;
@@ -280,13 +275,11 @@ class PDFGenerator {
     this.addFrenchText('FACTURE', 105, 25, 16, 'center');
     
     // Company name
-    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
+    this.addFrenchText(this.COMPANY_NAME, 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
     
-    // Vendeur section
-    this.addFrenchText('Vendeur: Nour Eddine', 15, 58, 8);
     
     // Document details in three columns
     const docDetailsY = 70;
@@ -321,19 +314,11 @@ class PDFGenerator {
 
     this.drawTable(headers, tableData, 85);
 
-    // Tax calculations
-    const subtotal = documentData.amount / 1.2;
-    const tax = documentData.amount - subtotal;
-    const totalY = 85 + 8 + (tableData.length * 8) + 10;
-    
-    // Tax section
-    this.addFrenchText(`Sous-total: ${subtotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DH`, 15, totalY + 5, 8);
-    this.addFrenchText(`TVA (20%): ${tax.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DH`, 15, totalY + 12, 8);
-    
     // Total section with border
-    this.doc.rect(15, totalY + 15, 180, 8, 'S');
-    this.addFrenchText('Total:', 20, totalY + 20, 10);
-    this.addFrenchText(`${documentData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, totalY + 20, 10, 'right');
+    const totalY = 85 + 8 + (tableData.length * 8) + 10;
+    this.doc.rect(15, totalY, 180, 8, 'S');
+    this.addFrenchText('Total:', 20, totalY + 5, 10);
+    this.addFrenchText(`${documentData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, totalY + 5, 10, 'right');
 
     return this.doc;
   }
@@ -346,13 +331,11 @@ class PDFGenerator {
     this.addFrenchText('BON DE COMMANDE FOURNISSEUR', 105, 25, 16, 'center');
     
     // Company name
-    this.addFrenchText('BRIQUIN', 190, 35, 14, 'right');
+    this.addFrenchText(this.COMPANY_NAME, 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
     
-    // Vendeur section
-    this.addFrenchText('Vendeur: Nour Eddine', 15, 58, 8);
     
     // Document details in three columns
     const docDetailsY = 70;

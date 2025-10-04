@@ -72,8 +72,8 @@ const WaitingList: React.FC = () => {
                 <th className="text-left px-4 py-2">{t('name')}</th>
                 <th className="text-left px-4 py-2">{t('code')}</th>
                 <th className="text-left px-4 py-2">{t('category')}</th>
-                <th className="text-left px-4 py-2">La Quantité</th>
-                <th className="text-left px-4 py-2">Quantité restante</th>
+                <th className="text-left px-4 py-2">{t('theQuantity')}</th>
+                <th className="text-left px-4 py-2">{t('remainingQuantity')}</th>
                 <th className="text-left px-4 py-2">{t('unit')}</th>
                 <th className="text-left px-4 py-2">{t('unitPrice')}</th>
                 <th className="text-left px-4 py-2">{t('totalPrice')}</th>
@@ -119,7 +119,7 @@ const WaitingList: React.FC = () => {
                         }}
                         className="px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white"
                       >
-                        l'inventaire
+{t('inventory')}
                       </button>
                       <button
                         onClick={() => {
@@ -151,7 +151,7 @@ const WaitingList: React.FC = () => {
                             : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                         }`}
                       >
-                        Compléter
+{t('complete')}
                       </button>
                       <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">{t('remove')}</button>
                     </div>

@@ -392,7 +392,7 @@ const Suppliers: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">Gérer vos fournisseurs et leurs informations</p>
         </div>
         <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={openAddModal}>
-          Nouveau Fournisseur
+{t('newSupplier')}
         </Button>
       </div>
 
@@ -832,34 +832,34 @@ const Suppliers: React.FC = () => {
                     {/* Nouveaux produits */}
                     {orderForm.newProducts.length > 0 && (
                       <div>
-                        <h5 className="text-md font-medium text-gray-900 dark:text-white mb-3">Nouveaux produits</h5>
+                        <h5 className="text-md font-medium text-gray-900 dark:text-white mb-3">{t('newProducts')}</h5>
                         <div className="overflow-x-auto">
                           <table className="w-full border border-gray-200 dark:border-gray-700 rounded-lg">
                             <thead className="bg-gray-50 dark:bg-gray-800">
                               <tr>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Nom *
+                                  {t('name')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Code *
+                                  {t('code')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Catégorie *
+                                  {t('category')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Unité *
+                                  {t('unit')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Prix unitaire *
+                                  {t('unitPrice')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Quantité *
+                                  {t('quantity')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Total
+                                  {t('total')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  Action
+                                  {t('actions')}
                                 </th>
                               </tr>
                             </thead>
@@ -991,7 +991,7 @@ const Suppliers: React.FC = () => {
               {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Notes et conditions (optionnel)
+{t('notesAndConditions')}
                 </label>
                 <textarea
                   value={orderForm.notes}
@@ -1006,7 +1006,7 @@ const Suppliers: React.FC = () => {
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                 <div className="flex items-center text-blue-800 dark:text-blue-200">
                   <FileText className="w-4 h-4 mr-2" />
-                  <span className="text-sm font-medium">Document automatique</span>
+                  <span className="text-sm font-medium">{t('automaticDocument')}</span>
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
                   Cette commande générera automatiquement un Bon de commande fournisseur complet avec tous les détails saisis.
@@ -1016,14 +1016,14 @@ const Suppliers: React.FC = () => {
 
             <div className="flex justify-end space-x-3 mt-6">
               <Button variant="secondary" onClick={closeOrderModal}>
-                Annuler
+{t('cancel')}
               </Button>
               <Button 
                 variant="primary" 
                 onClick={handleCreateOrder}
                 disabled={orderForm.items.length === 0 && orderForm.newProducts.length === 0}
               >
-                Créer Commande
+{t('createOrder')}
               </Button>
             </div>
           </div>

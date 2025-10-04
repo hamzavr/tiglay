@@ -471,7 +471,7 @@ const Clients: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-400">Gérer vos clients et leurs informations</p>
         </div>
         <Button variant="primary" icon={<Plus className="w-4 h-4" />} onClick={openAddModal}>
-          Nouveau Client
+{t('newClient')}
         </Button>
       </div>
 
@@ -798,7 +798,7 @@ const Clients: React.FC = () => {
               {/* Products Table */}
               <div className="relative z-40">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white">Produits vendus</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white">{t('productsSold')}</h4>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -819,28 +819,28 @@ const Clients: React.FC = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Nom
+                            {t('name')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Code
+                            {t('code')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Unité
+                            {t('unit')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Quantité
+                            {t('quantity')}
                           </th>
 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Prix Unitaire
+                            {t('unitPrice')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Dernier prix payé
+                            {t('lastPricePaid')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Total
+                            {t('total')}
                           </th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Actions
+                            {t('actions')}
                           </th>
                         </tr>
                       </thead>
@@ -978,7 +978,7 @@ const Clients: React.FC = () => {
                 onClick={handleCreateSale}
                 disabled={saleForm.items.length === 0}
               >
-                Créer Vente
+{t('createSale')}
               </Button>
             </div>
           </div>

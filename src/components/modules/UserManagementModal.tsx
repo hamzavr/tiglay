@@ -141,8 +141,8 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             {mode === 'create' ? 'Ajouter un utilisateur' : 'Modifier l\'utilisateur'}
           </h3>
@@ -154,7 +154,8 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Nom d'utilisateur */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -326,25 +327,28 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
             </div>
           )}
 
-          {/* Boutons */}
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={loading}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={loading}
-            >
-              {loading ? t('saving') : (mode === 'create' ? t('create') : t('edit'))}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
+        
+        {/* Boutons - toujours visibles en bas */}
+        <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            disabled={loading}
+          >
+            {t('cancel')}
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? t('saving') : (mode === 'create' ? t('create') : t('edit'))}
+          </Button>
+        </div>
       </div>
     </div>
   );

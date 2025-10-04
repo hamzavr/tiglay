@@ -1205,7 +1205,7 @@ const Documents: React.FC = () => {
                                         </select>
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité demandée</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('requestedQuantity')}</label>
                                         <input
                                           type="text"
                                           value={quantityUnit[0] || ''}
@@ -1241,7 +1241,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité Entrée</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('enteredQuantity')}</label>
                                         <input
                                           type="number"
                                           value={formData.enteredQuantities?.[`${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`] || ''}
@@ -1265,7 +1265,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Quantité restante</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('remainingQuantity')}</label>
                                         <div className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white">
                                           {(() => {
                                             const requestedQty = parseInt(quantityUnit[0]) || 0;
@@ -1285,12 +1285,12 @@ const Documents: React.FC = () => {
                                         </div>
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">Actions</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('actions')}</label>
                                         <div className="flex gap-1">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
                                               const requestedQty = parseInt(quantityUnit[0]) || 0;
                                               const productKey = `${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`;
                                               const enteredQty = formData.enteredQuantities?.[productKey] || 0;
@@ -1332,19 +1332,19 @@ const Documents: React.FC = () => {
                                             }}
                                             className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex-1"
                                           >
-                                            Ajouter
+{t('add')}
                                           </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const newNotes = notes.replace(product + '\n', '').replace(product, '');
-                                              setFormData({ ...formData, notes: newNotes });
-                                              alert('Produit rejeté');
-                                            }}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newNotes = notes.replace(product + '\n', '').replace(product, '');
+                                            setFormData({ ...formData, notes: newNotes });
+                                            alert('Produit rejeté');
+                                          }}
                                             className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors flex-1"
-                                          >
-                                            Rejeter
-                                          </button>
+                                        >
+{t('reject')}
+                                        </button>
                                         </div>
                                       </div>
                                     </div>
@@ -1356,7 +1356,7 @@ const Documents: React.FC = () => {
                           
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Notes
+{t('notes')}
                             </label>
                             <textarea
                               value={notesText}
@@ -1381,7 +1381,7 @@ const Documents: React.FC = () => {
                 /* Regular Notes for other document types */
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Notes (optionnel)
+{t('notesOptional')}
                   </label>
                   <textarea
                     value={formData.notes}
@@ -1581,7 +1581,7 @@ const Documents: React.FC = () => {
               {/* Supplier Order Details for supplier_purchase_order */}
               {viewingDocument.type === 'supplier_purchase_order' && viewingDocument.notes ? (
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Détails de la commande fournisseur</h4>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">{t('orderDetails')}</h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-3">
                     {(() => {
                       const notes = viewingDocument.notes;
@@ -1604,15 +1604,9 @@ const Documents: React.FC = () => {
                               <span className="ml-2 text-gray-900 dark:text-white">{deliveryDate}</span>
                             </div>
                           )}
-                          {total && (
-                            <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300">Total:</span>
-                              <span className="ml-2 text-gray-900 dark:text-white">{total}</span>
-                            </div>
-                          )}
                           {products.length > 0 && (
                             <div>
-                              <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">Produits commandés:</span>
+                              <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">{t('orderedProducts')}:</span>
                               <div className="space-y-1">
                                 {products.map((product, index) => (
                                   <div key={index} className="text-sm text-gray-900 dark:text-white">
