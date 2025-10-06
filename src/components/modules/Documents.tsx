@@ -379,15 +379,11 @@ const Documents: React.FC = () => {
     const nameCodeCategory = nameCodeCategoryMatch[1];
     const nameCodeCategoryParts = nameCodeCategory.split(' [');
     const nameCode = nameCodeCategoryParts[0];
-    const category = nameCodeCategoryParts[1] ? nameCodeCategoryParts[1].replace(']', '') : '';
 
     let newProduct = product;
     
     if (field === 'nameCode') {
-      const newNameCodeCategory = `${value} [${category}]`;
-      newProduct = product.replace(nameCodeCategory, newNameCodeCategory);
-    } else if (field === 'category') {
-      const newNameCodeCategory = `${nameCode} [${value}]`;
+      const newNameCodeCategory = `${value}`;
       newProduct = product.replace(nameCodeCategory, newNameCodeCategory);
     } else if (field === 'quantity') {
       const quantityUnitMatch = product.match(/:\s*(\d+)\s*(\w+)/);
@@ -424,14 +420,13 @@ const Documents: React.FC = () => {
     remainingQuantity?: number;
     unit: string;
     unitPrice: number;
-    category: string;
   }, flag: 'normal' | 'missing' | 'surplus'): WaitingAddResult => {
     try {
       const raw = localStorage.getItem('waitingListProducts');
       const list: any[] = raw ? JSON.parse(raw) : [];
 
-      // Dedupe par code (ou name+category si code vide)
-      const keyMatch = (p: any) => (item.code ? p.code === item.code : (p.name === item.name && p.category === item.category));
+      // Dedupe par code
+      const keyMatch = (p: any) => p.code === item.code;
       const idx = list.findIndex(keyMatch);
 
       if (idx >= 0) {
@@ -459,7 +454,6 @@ const Documents: React.FC = () => {
         remainingQuantity: item.remainingQuantity,
         unit: item.unit,
         unitPrice: item.unitPrice,
-        category: item.category,
         flag,
         createdAt: new Date().toISOString()
       };
@@ -1161,7 +1155,6 @@ const Documents: React.FC = () => {
                                   // Extraire nom, code et catégorie
                                   const nameCodeCategoryParts = nameCodeCategory.split(' [');
                                   const nameCode = nameCodeCategoryParts[0];
-                                  const category = nameCodeCategoryParts[1] ? nameCodeCategoryParts[1].replace(']', '') : '';
                                   
                                   return (
                                     <div key={index} className="grid grid-cols-2 md:grid-cols-8 gap-2 p-2 bg-white dark:bg-gray-600 rounded border">
@@ -1176,33 +1169,6 @@ const Documents: React.FC = () => {
                                           }}
                                           className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                         />
-                                      </div>
-                                      <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('category')}</label>
-                                        <select
-                                          value={category}
-                                          onChange={(e) => {
-                                            const newCategory = e.target.value;
-                                            updateProductInfo(index, 'category', newCategory);
-                                          }}
-                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        >
-                                          <option value="">{t('select')}</option>
-                                          <option value="Ciment">Ciment</option>
-                                          <option value="Briques">Briques</option>
-                                          <option value="Sable">Sable</option>
-                                          <option value="Gravier">Gravier</option>
-                                          <option value="Fer">Fer</option>
-                                          <option value="Béton">Béton</option>
-                                          <option value="Carrelage">Carrelage</option>
-                                          <option value="Toiture">Toiture</option>
-                                          <option value="Isolation">Isolation</option>
-                                          <option value="Peinture">Peinture</option>
-                                          <option value="Menuiserie">Menuiserie</option>
-                                          <option value="Électricité">Électricité</option>
-                                          <option value="Plomberie">Plomberie</option>
-                                          <option value="Autre">Autre</option>
-                                        </select>
                                       </div>
                                       <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">{t('requestedQuantity')}</label>
@@ -1319,7 +1285,6 @@ const Documents: React.FC = () => {
                                                 remainingQuantity: remainingToUse, // Valeur absolue si négative
                                                 unit: quantityUnit[1] || 'U',
                                                 unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
-                                                category: category || 'Autre'
                                               };
                                               const res = addProductToWaitingList(productData, 'normal');
                                               if (res === 'added') {

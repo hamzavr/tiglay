@@ -31,22 +31,22 @@ interface OrderItem {
   id: string;
   name: string;
   code: string;
-  category?: string;
   quantity: number;
   unit: string;
   unitPrice: number;
   total: number;
+  primeNumber?: number;
 }
 
 interface NewProductItem {
   id: string;
   name: string;
   code: string;
-  category: string;
   unit: string;
   unitPrice: number;
   quantity: number;
   total: number;
+  primeNumber?: number;
 }
 
 interface OrderFormData {
@@ -86,6 +86,37 @@ const Suppliers: React.FC = () => {
   const { execute: updateSupplier } = useApi(suppliersAPI.update);
   const { execute: deleteSupplier } = useApi(suppliersAPI.delete);
 
+  // Fonction pour générer un nombre premier basé sur le nom du produit
+  const generatePrimeNumber = (productName: string): number => {
+    const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+    const hash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return primes[hash % primes.length];
+  };
+
+  // Liste des produits de plomberie
+  const plumbingProducts = [
+    { name: 'Tuyau PVC 20mm', code: 'PLO-001', unit: 'M', buyPrice: 12.50, sellPrice: 18.00, primeNumber: 2, location: 'A1-B1' },
+    { name: 'Tuyau PVC 25mm', code: 'PLO-002', unit: 'M', buyPrice: 15.00, sellPrice: 22.00, primeNumber: 3, location: 'A1-B2' },
+    { name: 'Tuyau PVC 32mm', code: 'PLO-003', unit: 'M', buyPrice: 18.50, sellPrice: 28.00, primeNumber: 5, location: 'A1-B3' },
+    { name: 'Tuyau PVC 40mm', code: 'PLO-004', unit: 'M', buyPrice: 22.00, sellPrice: 35.00, primeNumber: 7, location: 'A1-B4' },
+    { name: 'Tuyau PVC 50mm', code: 'PLO-005', unit: 'M', buyPrice: 28.00, sellPrice: 45.00, primeNumber: 11, location: 'A1-B5' },
+    { name: 'Raccord coude 20mm', code: 'PLO-006', unit: 'PCS', buyPrice: 3.50, sellPrice: 6.00, primeNumber: 13, location: 'A2-B1' },
+    { name: 'Raccord coude 25mm', code: 'PLO-007', unit: 'PCS', buyPrice: 4.00, sellPrice: 7.50, primeNumber: 17, location: 'A2-B2' },
+    { name: 'Raccord coude 32mm', code: 'PLO-008', unit: 'PCS', buyPrice: 5.50, sellPrice: 9.00, primeNumber: 19, location: 'A2-B3' },
+    { name: 'Raccord T 20mm', code: 'PLO-009', unit: 'PCS', buyPrice: 4.50, sellPrice: 8.00, primeNumber: 23, location: 'A2-B4' },
+    { name: 'Raccord T 25mm', code: 'PLO-010', unit: 'PCS', buyPrice: 5.00, sellPrice: 9.50, primeNumber: 29, location: 'A2-B5' },
+    { name: 'Robinet simple 20mm', code: 'PLO-011', unit: 'PCS', buyPrice: 25.00, sellPrice: 40.00, primeNumber: 31, location: 'A3-B1' },
+    { name: 'Robinet simple 25mm', code: 'PLO-012', unit: 'PCS', buyPrice: 30.00, sellPrice: 50.00, primeNumber: 37, location: 'A3-B2' },
+    { name: 'Robinet double 20mm', code: 'PLO-013', unit: 'PCS', buyPrice: 45.00, sellPrice: 75.00, primeNumber: 41, location: 'A3-B3' },
+    { name: 'Robinet double 25mm', code: 'PLO-014', unit: 'PCS', buyPrice: 55.00, sellPrice: 90.00, primeNumber: 43, location: 'A3-B4' },
+    { name: 'Vanne d\'arrêt 20mm', code: 'PLO-015', unit: 'PCS', buyPrice: 35.00, sellPrice: 60.00, primeNumber: 47, location: 'A4-B1' },
+    { name: 'Vanne d\'arrêt 25mm', code: 'PLO-016', unit: 'PCS', buyPrice: 42.00, sellPrice: 70.00, primeNumber: 53, location: 'A4-B2' },
+    { name: 'Vanne d\'arrêt 32mm', code: 'PLO-017', unit: 'PCS', buyPrice: 50.00, sellPrice: 85.00, primeNumber: 59, location: 'A4-B3' },
+    { name: 'Collier de serrage 20mm', code: 'PLO-018', unit: 'PCS', buyPrice: 2.50, sellPrice: 4.50, primeNumber: 61, location: 'A5-B1' },
+    { name: 'Collier de serrage 25mm', code: 'PLO-019', unit: 'PCS', buyPrice: 3.00, sellPrice: 5.50, primeNumber: 67, location: 'A5-B2' },
+    { name: 'Collier de serrage 32mm', code: 'PLO-020', unit: 'PCS', buyPrice: 3.50, sellPrice: 6.50, primeNumber: 71, location: 'A5-B3' }
+  ];
+
   useEffect(() => {
     fetchSuppliers({ search: searchTerm });
     // Charger le catalogue produits pour suggestions
@@ -113,11 +144,10 @@ const Suppliers: React.FC = () => {
         const match = line.match(/•\s*-\s*-\s*([^[]+)\s*\[([^\]]+)\]:\s*(\d+(?:\.\d+)?)\s*(\w+)\s*×\s*(\d+(?:\.\d+)?)\s*DH\s*=\s*(\d+(?:\.\d+)?)\s*DH/);
         
         if (match) {
-          const [, name, category, quantity, unit, unitPrice, total] = match;
+          const [, name, quantity, unit, unitPrice, total] = match;
           items.push({
             name: name.trim(),
             code: '—', // No code available in this format
-            category: category.trim(),
             quantity: parseFloat(quantity),
             unit: unit.trim(),
             unitPrice: parseFloat(unitPrice),
@@ -192,11 +222,11 @@ const Suppliers: React.FC = () => {
       id: `item-${Date.now()}`,
       name: '',
       code: '',
-      category: '',
       quantity: 1,
       unit: 'U',
       unitPrice: 0,
-      total: 0
+      total: 0,
+      primeNumber: undefined
     };
     setOrderForm(prev => ({
       ...prev,
@@ -209,11 +239,11 @@ const Suppliers: React.FC = () => {
       id: `new-product-${Date.now()}`,
       name: '',
       code: '',
-      category: '',
       unit: 'U',
       unitPrice: 0,
       quantity: 1,
-      total: 0
+      total: 0,
+      primeNumber: undefined
     };
     setOrderForm(prev => ({
       ...prev,
@@ -221,29 +251,6 @@ const Suppliers: React.FC = () => {
     }));
   };
 
-  // Générer un code automatique basé sur la catégorie
-  const generateProductCode = (category: string) => {
-    const categoryPrefixes: { [key: string]: string } = {
-      'Ciment': 'CEM',
-      'Briques': 'BRI',
-      'Sable': 'SAB',
-      'Gravier': 'GRA',
-      'Fer': 'FER',
-      'Béton': 'BET',
-      'Carrelage': 'CAR',
-      'Toiture': 'TOI',
-      'Isolation': 'ISO',
-      'Peinture': 'PEI',
-      'Menuiserie': 'MEN',
-      'Électricité': 'ELE',
-      'Plomberie': 'PLO',
-      'Autre': 'AUT'
-    };
-    
-    const prefix = categoryPrefixes[category] || 'PRO';
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `${prefix}-${random}`;
-  };
 
   const removeOrderItem = (itemId: string) => {
     setOrderForm(prev => ({
@@ -266,9 +273,18 @@ const Suppliers: React.FC = () => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
           
-          // Générer automatiquement le code quand la catégorie change
-          if (field === 'category' && value) {
-            updatedItem.code = generateProductCode(value);
+          
+          // Générer automatiquement les données quand le nom change
+          if (field === 'name' && typeof value === 'string' && value.trim()) {
+            const foundProduct = plumbingProducts.find(p => p.name.toLowerCase() === value.toLowerCase());
+            if (foundProduct) {
+              updatedItem.code = foundProduct.code;
+              updatedItem.primeNumber = foundProduct.primeNumber;
+              updatedItem.unit = foundProduct.unit;
+              updatedItem.unitPrice = foundProduct.buyPrice;
+            } else {
+              updatedItem.primeNumber = generatePrimeNumber(value);
+            }
           }
           
           // Recalculer le total
@@ -289,9 +305,18 @@ const Suppliers: React.FC = () => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
           
-          // Générer automatiquement le code quand la catégorie change
-          if (field === 'category' && value) {
-            updatedItem.code = generateProductCode(value);
+          
+          // Générer automatiquement les données quand le nom change
+          if (field === 'name' && typeof value === 'string' && value.trim()) {
+            const foundProduct = plumbingProducts.find(p => p.name.toLowerCase() === value.toLowerCase());
+            if (foundProduct) {
+              updatedItem.code = foundProduct.code;
+              updatedItem.primeNumber = foundProduct.primeNumber;
+              updatedItem.unit = foundProduct.unit;
+              updatedItem.unitPrice = foundProduct.buyPrice;
+            } else {
+              updatedItem.primeNumber = generatePrimeNumber(value);
+            }
           }
           
           // Recalculer le total
@@ -312,13 +337,6 @@ const Suppliers: React.FC = () => {
   };
 
   // Suggestions depuis l'inventaire
-  const getFilteredProductsByName = (term: string) => {
-    const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
-    const lower = String(term || '').toLowerCase();
-    return catalog
-      .filter(p => String(p.name || '').toLowerCase().includes(lower))
-      .slice(0, 8);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,7 +429,7 @@ const Suppliers: React.FC = () => {
       </Card>
 
       {/* Suppliers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {filteredSuppliers.map((supplier) => (
           <Card key={supplier.id} className="hover:shadow-lg transition-shadow">
             <div className="space-y-4">
@@ -625,7 +643,7 @@ const Suppliers: React.FC = () => {
 
             <div className="space-y-6">
               {/* Order Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('desiredDeliveryDate')}
@@ -634,7 +652,7 @@ const Suppliers: React.FC = () => {
                     type="date"
                     value={orderForm.deliveryDate}
                     onChange={(e) => setOrderForm({ ...orderForm, deliveryDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
 
@@ -693,10 +711,10 @@ const Suppliers: React.FC = () => {
                                   {t('code')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  {t('category')}
+                                  {t('quantity')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  {t('quantity')}
+                                  {t('primeNumber')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   {t('unit')}
@@ -724,21 +742,13 @@ const Suppliers: React.FC = () => {
                                         onChange={(e) => {
                                           const val = e.target.value;
                                           updateOrderItem(item.id, 'name', val);
-                                          // si on trouve un produit exact, pré-remplir code/prix/catégorie
-                                          const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
-                                          const found = catalog.find(p => String(p.name || '').toLowerCase() === String(val || '').toLowerCase());
-                                          if (found) {
-                                            updateOrderItem(item.id, 'code', found.code || item.code);
-                                            updateOrderItem(item.id, 'category', found.category || item.category);
-                                            updateOrderItem(item.id, 'unitPrice', Number(found.buyPrice) || item.unitPrice);
-                                          }
                                         }}
                                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                         placeholder="Nom du produit"
                                       />
                                       <datalist id={`supplier-order-product-suggestions-${item.id}`}>
-                                        {(getFilteredProductsByName(item.name)).map((p: any) => (
-                                          <option key={p.id} value={p.name} />
+                                        {plumbingProducts.map((p, index) => (
+                                          <option key={index} value={p.name} />
                                         ))}
                                       </datalist>
                                     </div>
@@ -753,29 +763,6 @@ const Suppliers: React.FC = () => {
                                     />
                                   </td>
                                   <td className="px-3 py-2">
-                                    <select
-                                      value={item.category || ''}
-                                      onChange={(e) => updateOrderItem(item.id, 'category', e.target.value)}
-                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                    >
-                                      <option value="">Sélectionner</option>
-                                      <option value="Ciment">Ciment</option>
-                                      <option value="Briques">Briques</option>
-                                      <option value="Sable">Sable</option>
-                                      <option value="Gravier">Gravier</option>
-                                      <option value="Fer">Fer</option>
-                                      <option value="Béton">Béton</option>
-                                      <option value="Carrelage">Carrelage</option>
-                                      <option value="Toiture">Toiture</option>
-                                      <option value="Isolation">Isolation</option>
-                                      <option value="Peinture">Peinture</option>
-                                      <option value="Menuiserie">Menuiserie</option>
-                                      <option value="Électricité">Électricité</option>
-                                      <option value="Plomberie">Plomberie</option>
-                                      <option value="Autre">Autre</option>
-                                    </select>
-                                  </td>
-                                  <td className="px-3 py-2">
                                     <input
                                       type="number"
                                       value={item.quantity}
@@ -783,6 +770,11 @@ const Suppliers: React.FC = () => {
                                       className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                       min="1"
                                     />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {item.primeNumber || '-'}
+                                    </div>
                                   </td>
                                   <td className="px-3 py-2">
                                     <select
@@ -844,9 +836,6 @@ const Suppliers: React.FC = () => {
                                   {t('code')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                  {t('category')} *
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   {t('unit')} *
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -854,6 +843,9 @@ const Suppliers: React.FC = () => {
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   {t('quantity')} *
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                  {t('primeNumber')}
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                   {t('total')}
@@ -875,21 +867,14 @@ const Suppliers: React.FC = () => {
                                         onChange={(e) => {
                                           const val = e.target.value;
                                           updateNewProductItem(item.id, 'name', val);
-                                          const catalog: any[] = Array.isArray(productCatalog) ? (productCatalog as any) : [];
-                                          const found = catalog.find(p => String(p.name || '').toLowerCase() === String(val || '').toLowerCase());
-                                          if (found) {
-                                            updateNewProductItem(item.id, 'code', found.code || item.code);
-                                            updateNewProductItem(item.id, 'unitPrice', Number(found.buyPrice) || item.unitPrice);
-                                            updateNewProductItem(item.id, 'category', found.category || item.category);
-                                          }
                                         }}
                                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
                                         placeholder="Nom du produit"
                                         required
                                       />
                                       <datalist id={`supplier-new-product-suggestions-${item.id}`}>
-                                        {(getFilteredProductsByName(item.name)).map((p: any) => (
-                                          <option key={p.id} value={p.name} />
+                                        {plumbingProducts.map((p, index) => (
+                                          <option key={index} value={p.name} />
                                         ))}
                                       </datalist>
                                     </div>
@@ -903,30 +888,6 @@ const Suppliers: React.FC = () => {
                                       placeholder="Code produit"
                                       required
                                     />
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <select
-                                      value={item.category}
-                                      onChange={(e) => updateNewProductItem(item.id, 'category', e.target.value)}
-                                      className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-600 text-gray-900 dark:text-white"
-                                      required
-                                    >
-                                      <option value="">Sélectionner</option>
-                                      <option value="Ciment">Ciment</option>
-                                      <option value="Briques">Briques</option>
-                                      <option value="Sable">Sable</option>
-                                      <option value="Gravier">Gravier</option>
-                                      <option value="Fer">Fer</option>
-                                      <option value="Béton">Béton</option>
-                                      <option value="Carrelage">Carrelage</option>
-                                      <option value="Toiture">Toiture</option>
-                                      <option value="Isolation">Isolation</option>
-                                      <option value="Peinture">Peinture</option>
-                                      <option value="Menuiserie">Menuiserie</option>
-                                      <option value="Électricité">Électricité</option>
-                                      <option value="Plomberie">Plomberie</option>
-                                      <option value="Autre">Autre</option>
-                                    </select>
                                   </td>
                                   <td className="px-3 py-2">
                                     <select
@@ -962,6 +923,11 @@ const Suppliers: React.FC = () => {
                                       min="1"
                                       required
                                     />
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                      {item.primeNumber || '-'}
+                                    </div>
                                   </td>
                                   <td className="px-3 py-2">
                                     <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -1105,7 +1071,6 @@ const Suppliers: React.FC = () => {
                                 <tr className="bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-300">
                                   <th className="px-3 py-2 text-left">{t('orderItemName')}</th>
                                   <th className="px-3 py-2 text-left">{t('orderItemCode')}</th>
-                                  <th className="px-3 py-2 text-left">{t('orderItemCategory')}</th>
                                   <th className="px-3 py-2 text-right">{t('orderItemQuantity')}</th>
                                   <th className="px-3 py-2 text-right">{t('orderItemUnit')}</th>
                                   <th className="px-3 py-2 text-right">{t('orderItemUnitPrice')}</th>
@@ -1116,7 +1081,6 @@ const Suppliers: React.FC = () => {
                                 {items.map((item, idx) => {
                                   const name = item.name || '—';
                                   const code = item.code || '—';
-                                  const category = item.category || '—';
                                   const unit = item.unit || '—';
                                   const qty = typeof item.quantity === 'number' ? item.quantity : (Number(item.quantity) || 0);
                                   const price = typeof item.unitPrice === 'number' ? item.unitPrice : (Number(item.unitPrice) || 0);
@@ -1125,7 +1089,6 @@ const Suppliers: React.FC = () => {
                                     <tr key={idx}>
                                       <td className="px-3 py-2">{name}</td>
                                       <td className="px-3 py-2">{code}</td>
-                                      <td className="px-3 py-2">{category}</td>
                                       <td className="px-3 py-2 text-right">{qty}</td>
                                       <td className="px-3 py-2 text-right">{unit}</td>
                                       <td className="px-3 py-2 text-right">{price.toLocaleString()} DH</td>

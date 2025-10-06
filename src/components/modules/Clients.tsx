@@ -280,6 +280,14 @@ const Clients: React.FC = () => {
             if (found) {
               updatedItem.code = lastCode || found.code || updatedItem.code;
               updatedItem.productId = found.id;
+              // Auto-remplir l'unité
+              updatedItem.unit = found.unit || updatedItem.unit;
+              // Auto-remplir la quantité avec le nombre premier
+              updatedItem.quantity = found.primeNumber || updatedItem.quantity;
+              // Auto-remplir le prix unitaire avec le prix de vente
+              updatedItem.unitPrice = found.sellPrice || updatedItem.unitPrice;
+              // Recalculer le total après auto-remplissage
+              updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
               const priceFromHistory = getLastPaidPrice(found.id);
               updatedItem.lastUnitPrice = priceFromHistory !== undefined ? priceFromHistory : (lastPrice !== undefined ? lastPrice : undefined);
               if (updatedItem.unitPrice === 0 && updatedItem.lastUnitPrice !== undefined) {
@@ -964,7 +972,7 @@ const Clients: React.FC = () => {
                   <span className="text-sm font-medium">Documents automatiques</span>
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                  Cette vente générera automatiquement un Bon de commande client, un Bon de livraison et une Facture avec tous les détails saisis.
+                  Cette vente générera automatiquement un Bon de livraison avec tous les détails saisis.
                 </p>
               </div>
             </div>

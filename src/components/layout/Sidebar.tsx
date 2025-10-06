@@ -7,7 +7,8 @@ import {
   FileText,
   Clock,
   BarChart3,
-  Settings
+  Settings,
+  List
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const allMenuItems = [
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard, permission: null },
     { id: 'inventory', label: t('inventory'), icon: Package, permission: 'canAccessInventory' },
+    { id: 'products-list', label: t('productsList'), icon: List, permission: 'canAccessInventory' },
     { id: 'suppliers', label: t('suppliers'), icon: Users, permission: 'canAccessSuppliers' },
     { id: 'clients', label: t('clients'), icon: UserCheck, permission: 'canAccessClients' },
     { id: 'documents', label: t('documents'), icon: FileText, permission: 'canAccessDocuments' },

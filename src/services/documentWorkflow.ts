@@ -108,21 +108,7 @@ class DocumentWorkflowService {
       // Transformer les items de la vente en format document
       const documentItems = this.transformSaleItemsToDocumentItems(saleData);
 
-      // 1. Bon de commande client (Étape 4)
-      const customerOrder = await documentsAPI.create({
-        type: 'customer_sales_order',
-        number: this.generateDocumentNumber('customer_sales_order'),
-        workflowStep: 4,
-        status: 'sent',
-        amount: saleData.total,
-        clientId: saleData.clientId || saleData.Client?.id,
-        notes: `Commande automatique générée depuis la vente ${saleData.id}`,
-        items: documentItems,
-        linkedDocuments: []
-      });
-      documents.push(customerOrder);
-
-      // 2. Bon de livraison (Étape 5)
+      // Générer seulement le Bon de livraison
       const deliveryNote = await documentsAPI.create({
         type: 'delivery_note',
         number: this.generateDocumentNumber('delivery_note'),
@@ -132,27 +118,9 @@ class DocumentWorkflowService {
         clientId: saleData.clientId || saleData.Client?.id,
         notes: `Bon de livraison automatique pour la vente ${saleData.id}`,
         items: documentItems,
-        linkedDocuments: [customerOrder.id || customerOrder.data?.id]
+        linkedDocuments: []
       });
       documents.push(deliveryNote);
-
-      // 3. Facture (Étape 6) - SUPPRIMÉ: La facture n'est plus générée automatiquement
-      // La facture doit maintenant être créée manuellement via le bouton "Créer Facture" dans l'interface
-
-      // Mettre à jour les documents liés (sans facture)
-      const customerOrderId = customerOrder.id || customerOrder.data?.id;
-      const deliveryNoteId = deliveryNote.id || deliveryNote.data?.id;
-
-      if (customerOrderId && deliveryNoteId) {
-        await Promise.all([
-          documentsAPI.update(customerOrderId, { 
-            linkedDocuments: [deliveryNoteId] 
-          }),
-          documentsAPI.update(deliveryNoteId, { 
-            linkedDocuments: [customerOrderId] 
-          })
-        ]);
-      }
 
       console.log('Documents client créés automatiquement (sans facture):', documents);
       return documents;
@@ -194,9 +162,8 @@ Produits commandés:
 ${combinedItems.map(item => {
   const code = item.code ?? '-';
   const name = item.name ?? item.description ?? '-';
-  const category = item.category ?? 'Autre';
   const unit = item.unit ?? 'U';
-  return `• ${code} - ${name} [${category}]: ${item.quantity} ${unit} × ${item.unitPrice} DH = ${item.total} DH`;
+  return `• ${code} - ${name}: ${item.quantity} ${unit} × ${item.unitPrice} DH = ${item.total} DH`;
 }).join('\n')}
 
 Notes: ${orderData.notes || ''}

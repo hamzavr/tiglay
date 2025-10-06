@@ -10,7 +10,7 @@ const router = express.Router();
 // Get all products
 router.get('/', auth, async (req, res) => {
   try {
-    const { search, category, lowStock } = req.query;
+    const { search, lowStock } = req.query;
     const where = { isActive: true };
 
     if (search) {
@@ -21,9 +21,6 @@ router.get('/', auth, async (req, res) => {
       ];
     }
 
-    if (category && category !== 'all') {
-      where.category = category;
-    }
 
     if (lowStock === 'true') {
       where[Op.and] = [
@@ -72,7 +69,6 @@ router.post('/', [auth, authorize('admin', 'manager')], [
   body('code').notEmpty().withMessage('Product code is required'),
   body('buyPrice').isNumeric().withMessage('Buy price must be a number'),
   body('sellPrice').isNumeric().withMessage('Sell price must be a number'),
-  body('category').notEmpty().withMessage('Category is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -94,7 +90,6 @@ router.post('/', [auth, authorize('admin', 'manager')], [
         nameAr: payload.nameAr ?? existing.nameAr,
         description: payload.description ?? existing.description,
         descriptionAr: payload.descriptionAr ?? existing.descriptionAr,
-        category: payload.category ?? existing.category,
         size: payload.size ?? existing.size,
         buyPrice: payload.buyPrice ?? existing.buyPrice,
         sellPrice: payload.sellPrice ?? existing.sellPrice,

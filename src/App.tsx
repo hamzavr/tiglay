@@ -14,6 +14,7 @@ import Documents from './components/modules/Documents';
 import Reports from './components/modules/Reports';
 import Settings from './components/modules/Settings';
 import WaitingList from './components/modules/WaitingList';
+import ProductsList from './components/modules/ProductsList';
 
 function AppContent() {
   const { user, loading, hasPermission } = useAuth();
@@ -23,7 +24,7 @@ function AppContent() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash && ['dashboard', 'inventory', 'suppliers', 'clients', 'documents', 'waiting', 'reports', 'settings'].includes(hash)) {
+      if (hash && ['dashboard', 'inventory', 'products-list', 'suppliers', 'clients', 'documents', 'waiting', 'reports', 'settings'].includes(hash)) {
         setActiveTab(hash);
       }
     };
@@ -60,6 +61,8 @@ function AppContent() {
         return <Dashboard />;
       case 'inventory':
         return hasPermission('canAccessInventory') ? <Inventory /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
+      case 'products-list':
+        return hasPermission('canAccessInventory') ? <ProductsList /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'suppliers':
         return hasPermission('canAccessSuppliers') ? <Suppliers /> : <div className="text-center py-8"><p className="text-gray-500">Accès refusé</p></div>;
       case 'clients':

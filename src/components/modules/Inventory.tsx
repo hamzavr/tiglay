@@ -13,7 +13,6 @@ interface Product {
   code: string;
   description?: string;
   descriptionAr?: string;
-  category: string;
   size?: string;
   buyPrice: number;
   sellPrice: number;
@@ -25,6 +24,7 @@ interface Product {
   totalReturns: number;
   image?: string;
   location?: string;
+  primeNumber?: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -34,7 +34,6 @@ interface ProductFormData {
   name: string;
   code: string;
   description: string;
-  category: string;
   size: string;
   buyPrice: number;
   sellPrice: number;
@@ -42,6 +41,7 @@ interface ProductFormData {
   minStock: number;
   expiryDate: string;
   location: string;
+  primeNumber?: number;
   image?: string;
 }
 
@@ -51,11 +51,17 @@ const Inventory: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Fonction pour générer un nombre premier basé sur le nom du produit
+  const generatePrimeNumber = (productName: string): number => {
+    const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+    const hash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return primes[hash % primes.length];
+  };
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     code: '',
     description: '',
-    category: '',
     size: '',
     buyPrice: 0,
     sellPrice: 0,
@@ -88,14 +94,14 @@ const Inventory: React.FC = () => {
           name: productData.name || '',
           code: productData.code || '',
           description: '',
-          category: productData.category || 'Autre',
           size: '',
-          buyPrice: productData.unitPrice || 0,
-          sellPrice: 0,
-          stock: productData.quantity || 0,
+          buyPrice: productData.buyPrice || 0,
+          sellPrice: productData.sellPrice || 0,
+          stock: productData.stock || 0,
           minStock: 5,
           expiryDate: '',
-          location: '',
+          location: productData.location || '',
+          primeNumber: productData.primeNumber || 2,
           image: ''
         });
         
@@ -124,7 +130,6 @@ const Inventory: React.FC = () => {
         name: productData.name || '',
         code: productData.code || '',
         description: '',
-        category: productData.category || 'Autre',
         size: '',
         buyPrice: productData.unitPrice || 0,
         sellPrice: 0,
@@ -154,7 +159,7 @@ const Inventory: React.FC = () => {
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all';
     return matchesSearch && matchesCategory;
   });
 
@@ -173,7 +178,6 @@ const Inventory: React.FC = () => {
       name: '',
       code: '',
       description: '',
-      category: '',
       size: '',
       buyPrice: 0,
       sellPrice: 0,
@@ -192,7 +196,6 @@ const Inventory: React.FC = () => {
       name: product.name,
       code: product.code,
       description: product.description || '',
-      category: product.category,
       size: product.size || '',
       buyPrice: product.buyPrice,
       sellPrice: product.sellPrice,
@@ -200,6 +203,7 @@ const Inventory: React.FC = () => {
       minStock: product.minStock,
       expiryDate: product.expiryDate || '',
       location: product.location || '',
+      primeNumber: product.primeNumber || 0,
       image: product.image || ''
     });
     setIsModalOpen(true);
@@ -212,7 +216,6 @@ const Inventory: React.FC = () => {
       name: '',
       code: '',
       description: '',
-      category: '',
       size: '',
       buyPrice: 0,
       sellPrice: 0,
@@ -227,8 +230,8 @@ const Inventory: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.code.trim() || !formData.category.trim()) {
-      alert('Name, code, and category are required!');
+    if (!formData.name.trim() || !formData.code.trim()) {
+      alert('Name and code are required!');
       return;
     }
 
@@ -296,7 +299,16 @@ const Inventory: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof ProductFormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Générer automatiquement le nombre premier quand le nom change
+      if (field === 'name' && typeof value === 'string' && value.trim()) {
+        newData.primeNumber = generatePrimeNumber(value);
+      }
+      
+      return newData;
+    });
   };
 
   return (
@@ -383,12 +395,10 @@ const Inventory: React.FC = () => {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('code')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('name')}</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('category')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('stateQuantity')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('buyPrice')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('sellPrice')}</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('expiration')}</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('status')}</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('location')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('actions')}</th>
               </tr>
             </thead>
@@ -397,7 +407,6 @@ const Inventory: React.FC = () => {
                 <tr key={product.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-mono">{product.code}</td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white font-medium">{product.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{product.category}</td>
                   <td className="py-3 px-4">
                     <span className={`text-sm font-medium ${
                       isLowStock(product) 
@@ -409,21 +418,7 @@ const Inventory: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{product.buyPrice} DH</td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{product.sellPrice} DH</td>
-                  <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{product.expiryDate}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex space-x-1">
-                      {isLowStock(product) && (
-                        <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400 rounded-full">
-                          Stock bas
-                        </span>
-                      )}
-                      {isExpiringSoon(product) && (
-                        <span className="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 rounded-full">
-                          {t('expiringSoon')}
-                        </span>
-                      )}
-                    </div>
-                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{product.location || '-'}</td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
                       <button 
@@ -524,24 +519,6 @@ const Inventory: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('category')} *
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    required
-                    title="Sélectionner une catégorie"
-                    aria-label="Sélectionner une catégorie"
-                  >
-                    <option value="">{t('selectCategory')}</option>
-                    {categories.slice(1).map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -591,15 +568,15 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('minStock')}
+                    {t('primeNumber')}
                   </label>
                   <input
                     type="number"
                     min="0"
-                    value={formData.minStock}
-                    onChange={(e) => handleInputChange('minStock', parseInt(e.target.value) || 0)}
+                    value={formData.primeNumber || ''}
+                    onChange={(e) => handleInputChange('primeNumber', parseInt(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    placeholder="5"
+                    placeholder="Nombre premier"
                   />
                 </div>
 

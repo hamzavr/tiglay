@@ -15,6 +15,7 @@ const translations = {
     dashboard: 'لوحة التحكم',
     pos: 'نقطة البيع',
     inventory: 'المخزون',
+    productsList: 'قائمة المنتجات',
     suppliers: 'الموردين',
     clients: 'العملاء',
     documents: 'المستندات',
@@ -70,6 +71,7 @@ const translations = {
     orderedProducts: 'المنتجات المطلوبة',
     notes: 'الملاحظات',
     notesOptional: 'الملاحظات (اختياري)',
+    primeNumber: 'العدد الأولي',
     
     // POS
     cart: 'السلة',
@@ -1918,6 +1920,7 @@ const translations = {
     dashboard: 'Tableau de bord',
     pos: 'Point de vente',
     inventory: 'Inventaire',
+    productsList: 'Liste des produits',
     suppliers: 'Fournisseurs',
     clients: 'Clients',
     documents: 'Documents',
@@ -1973,6 +1976,7 @@ const translations = {
     orderedProducts: 'Produits commandés',
     notes: 'Notes',
     notesOptional: 'Notes (optionnel)',
+    primeNumber: 'Nombre premier',
     
     // POS
     cart: 'Panier',

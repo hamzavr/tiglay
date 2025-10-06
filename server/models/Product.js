@@ -25,10 +25,6 @@ const Product = sequelize.define('Product', {
   descriptionAr: {
     type: DataTypes.TEXT
   },
-  category: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
   size: {
     type: DataTypes.STRING
   },
@@ -68,6 +64,14 @@ const Product = sequelize.define('Product', {
   },
   location: {
     type: DataTypes.STRING
+  },
+  unit: {
+    type: DataTypes.STRING,
+    defaultValue: 'U'
+  },
+  primeNumber: {
+    type: DataTypes.INTEGER,
+    allowNull: true
   },
   isActive: {
     type: DataTypes.BOOLEAN,
