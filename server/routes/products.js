@@ -84,7 +84,6 @@ router.post('/', [auth, authorize('admin', 'manager')], [
     // Solution robuste: si un produit avec le même code existe (même inactif), on le réactive et on met à jour les champs
     const existing = await Product.findOne({ where: { code: payload.code } });
     if (existing) {
-      const nextStock = (existing.stock || 0) + (Number(payload.stock) || 0);
       await existing.update({
         name: payload.name ?? existing.name,
         nameAr: payload.nameAr ?? existing.nameAr,
@@ -93,11 +92,13 @@ router.post('/', [auth, authorize('admin', 'manager')], [
         size: payload.size ?? existing.size,
         buyPrice: payload.buyPrice ?? existing.buyPrice,
         sellPrice: payload.sellPrice ?? existing.sellPrice,
-        stock: nextStock,
+        stock: payload.stock ?? existing.stock,
         minStock: payload.minStock ?? existing.minStock,
         expiryDate: payload.expiryDate ?? existing.expiryDate,
         location: payload.location ?? existing.location,
         image: payload.image ?? existing.image,
+        missingQuantity: payload.missingQuantity ?? existing.missingQuantity ?? 0,
+        surplusQuantity: payload.surplusQuantity ?? existing.surplusQuantity ?? 0,
         isActive: true
       });
       return res.json(existing);
@@ -112,8 +113,12 @@ router.post('/', [auth, authorize('admin', 'manager')], [
       try {
         const existing = await Product.findOne({ where: { code: req.body.code } });
         if (existing) {
-          const nextStock = (existing.stock || 0) + (Number(req.body.stock) || 0);
-          await existing.update({ stock: nextStock, isActive: true });
+          await existing.update({ 
+            stock: req.body.stock ?? existing.stock,
+            missingQuantity: req.body.missingQuantity ?? existing.missingQuantity ?? 0,
+            surplusQuantity: req.body.surplusQuantity ?? existing.surplusQuantity ?? 0,
+            isActive: true 
+          });
           return res.json(existing);
         }
       } catch (_) {}

@@ -1171,7 +1171,7 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('requestedQuantity')}</label>
+                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('quantity')}</label>
                                         <input
                                           type="text"
                                           value={quantityUnit[0] || ''}
@@ -1207,109 +1207,12 @@ const Documents: React.FC = () => {
                                         />
                                       </div>
                                       <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('enteredQuantity')}</label>
-                                        <input
-                                          type="number"
-                                          value={formData.enteredQuantities?.[`${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`] || ''}
-                                          onChange={(e) => {
-                                            const productKey = `${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`;
-                                            const enteredQty = parseInt(e.target.value) || 0;
-                                            
-                                            console.log('Debug - Setting enteredQty:', enteredQty, 'for key:', productKey);
-                                            
-                                            setFormData(prev => ({
-                                              ...prev,
-                                              enteredQuantities: {
-                                                ...prev.enteredQuantities,
-                                                [productKey]: enteredQty
-                                              }
-                                            }));
-                                          }}
-                                          placeholder="0"
-                                          min="0"
-                                          className="w-full px-1 py-1 text-xs border border-gray-300 dark:border-gray-500 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('remainingQuantity')}</label>
-                                        <div className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-500 rounded bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white">
-                                          {(() => {
-                                            const requestedQty = parseInt(quantityUnit[0]) || 0;
-                                            const enteredQty = formData.enteredQuantities?.[`${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`] || 0;
-                                            const remaining = requestedQty - enteredQty;
-                                            return remaining < 0 ? Math.abs(remaining) : remaining;
-                                          })()}
-                                        </div>
-                                      </div>
-                                      <div>
                                         <label className="text-xs text-gray-500 dark:text-gray-400">{t('total')}</label>
                                         <div className="text-sm font-medium text-gray-900 dark:text-white py-1">
                                           {(() => {
                                             const totalMatch = product.match(/=\s*([\d.]+)\s*DH/);
                                             return totalMatch ? `${totalMatch[1]} DH` : '0.00 DH';
                                           })()}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <label className="text-xs text-gray-500 dark:text-gray-400">{t('actions')}</label>
-                                        <div className="flex gap-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const priceMatch = product.match(/×\s*([\d.]+)\s*DH/);
-                                              const requestedQty = parseInt(quantityUnit[0]) || 0;
-                                              const productKey = `${nameCode.replace(/[^a-zA-Z0-9]/g, '_')}-${index}`;
-                                              const enteredQty = formData.enteredQuantities?.[productKey] || 0;
-                                              const remaining = requestedQty - enteredQty;
-                                              
-                                              // Debug
-                                              console.log('Debug - productKey:', productKey);
-                                              console.log('Debug - enteredQty:', enteredQty);
-                                              console.log('Debug - formData.enteredQuantities:', formData.enteredQuantities);
-                                              
-                                              // Vérifier si la quantité entrée est > 0
-                                              if (enteredQty <= 0) {
-                                                alert('Veuillez d\'abord saisir une quantité entrée avant d\'ajouter à la liste d\'attente');
-                                                return;
-                                              }
-                                              
-                                              // Ajouter le produit à la liste d'attente
-                                              // Si quantité restante est négative, utiliser quantité demandée, sinon quantité entrée
-                                              const quantityToUse = remaining < 0 ? requestedQty : enteredQty;
-                                              const remainingToUse = remaining < 0 ? Math.abs(remaining) : remaining;
-                                              
-                                              const productData = {
-                                                name: nameCode.split(' - ')[1] || nameCode.split(' (')[0] || nameCode,
-                                                code: nameCode.includes(' - ') ? nameCode.split(' - ')[0] : (nameCode.includes('(') ? nameCode.split('(')[1].split(')')[0] : ''),
-                                                quantity: quantityToUse, // Quantité demandée si restante négative, sinon quantité entrée
-                                                remainingQuantity: remainingToUse, // Valeur absolue si négative
-                                                unit: quantityUnit[1] || 'U',
-                                                unitPrice: priceMatch ? parseFloat(priceMatch[1]) : 0,
-                                              };
-                                              const res = addProductToWaitingList(productData, 'normal');
-                                              if (res === 'added') {
-                                                const message = remaining < 0 
-                                                  ? 'Produit ajouté à la liste d\'attente avec quantité demandée comme "La Quantité" (quantité restante négative)'
-                                                  : 'Produit ajouté à la liste d\'attente avec quantité entrée comme "La Quantité"';
-                                                alert(message);
-                                              } else if (res === 'updated') alert('Produit déjà dans la liste, informations mises à jour');
-                                              else if (res === 'exists') alert('Produit déjà ajouté à la liste d\'attente');
-                                            }}
-                                            className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex-1"
-                                          >
-{t('add')}
-                                          </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newNotes = notes.replace(product + '\n', '').replace(product, '');
-                                            setFormData({ ...formData, notes: newNotes });
-                                            alert('Produit rejeté');
-                                          }}
-                                            className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors flex-1"
-                                        >
-{t('reject')}
-                                        </button>
                                         </div>
                                       </div>
                                     </div>
@@ -1572,12 +1475,109 @@ const Documents: React.FC = () => {
                           {products.length > 0 && (
                             <div>
                               <span className="font-medium text-gray-700 dark:text-gray-300 block mb-2">{t('orderedProducts')}:</span>
-                              <div className="space-y-1">
-                                {products.map((product, index) => (
-                                  <div key={index} className="text-sm text-gray-900 dark:text-white">
-                                    {product.replace('• ', '')}
-                                  </div>
-                                ))}
+                              <div className="overflow-x-auto">
+                                <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
+                                  <thead className="bg-gray-100 dark:bg-gray-600">
+                                    <tr>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {t('code')}
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {t('name')}
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {t('quantity')}
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {t('unit')}
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {t('unitPrice')}
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {t('total')}
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        Action
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                                    {products.map((product, index) => {
+                                      // Parser le produit pour extraire les informations
+                                      // Format: "• CODE - NOM: QUANTITÉ UNITÉ × PRIX DH = TOTAL DH"
+                                      const productText = product.replace('• ', '');
+                                      const parts = productText.split(': ');
+                                      const nameCode = parts[0];
+                                      const details = parts[1] ? parts[1].split(' × ') : [];
+                                      const quantityUnit = details[0] ? details[0].split(' ') : [];
+                                      const priceTotal = details[1] ? details[1].split(' = ') : [];
+                                      
+                                      const nameCodeParts = nameCode.split(' - ');
+                                      const code = nameCodeParts[0] || '';
+                                      const name = nameCodeParts[1] || nameCode;
+                                      const quantity = quantityUnit[0] || '';
+                                      const unit = quantityUnit[1] || '';
+                                      const unitPrice = priceTotal[0] ? priceTotal[0].replace(' DH', '') : '';
+                                      const total = priceTotal[1] ? priceTotal[1].replace(' DH', '') : '';
+                                      
+                                      return (
+                                        <tr key={index}>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white font-mono">
+                                            {code}
+                                          </td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">
+                                            {name}
+                                          </td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">
+                                            {quantity}
+                                          </td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">
+                                            {unit}
+                                          </td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">
+                                            {unitPrice} DH
+                                          </td>
+                                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white font-medium">
+                                            {total} DH
+                                          </td>
+                                          <td className="px-3 py-2">
+                                            <button
+                                              onClick={() => {
+                                                // Vérifier si le produit existe déjà dans la liste d'attente
+                                                const existingWaitingList = JSON.parse(localStorage.getItem('waitingListProducts') || '[]');
+                                                const existingItem = existingWaitingList.find((item: any) => item.code === code);
+                                                
+                                                if (existingItem) {
+                                                  alert('Ce produit existe déjà dans la liste d\'attente');
+                                                  return;
+                                                }
+                                                
+                                                // Rediriger vers la liste d'attente avec les données pré-remplies
+                                                const prefilledData = {
+                                                  name: name,
+                                                  code: code,
+                                                  quantity: quantity,
+                                                  unit: unit,
+                                                  buyPrice: parseFloat(unitPrice),
+                                                  sellPrice: parseFloat(unitPrice) * 1.5, // Prix de vente estimé
+                                                  missingQuantity: 0,
+                                                  surplusQuantity: 0
+                                                };
+                                                
+                                                localStorage.setItem('waitingListPrefilledData', JSON.stringify(prefilledData));
+                                                window.location.hash = '#waiting';
+                                              }}
+                                              className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                                            >
+                                              Ajouter
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
                               </div>
                             </div>
                           )}

@@ -18,6 +18,8 @@ interface Product {
   sellPrice: number;
   stock: number;
   minStock: number;
+  missingQuantity?: number;
+  surplusQuantity?: number;
   expiryDate?: string;
   arrivalDate?: string;
   totalPurchases: number;
@@ -37,8 +39,9 @@ interface ProductFormData {
   size: string;
   buyPrice: number;
   sellPrice: number;
-  stock: number;
-  minStock: number;
+  quantity: number;
+  missingQuantity: number;
+  surplusQuantity: number;
   expiryDate: string;
   location: string;
   primeNumber?: number;
@@ -97,8 +100,9 @@ const Inventory: React.FC = () => {
           size: '',
           buyPrice: productData.buyPrice || 0,
           sellPrice: productData.sellPrice || 0,
-          stock: productData.stock || 0,
-          minStock: 5,
+          quantity: productData.stock || 0,
+          missingQuantity: productData.missingQuantity || 0,
+          surplusQuantity: productData.surplusQuantity || 0,
           expiryDate: '',
           location: productData.location || '',
           primeNumber: productData.primeNumber || 2,
@@ -131,12 +135,14 @@ const Inventory: React.FC = () => {
         code: productData.code || '',
         description: '',
         size: '',
-        buyPrice: productData.unitPrice || 0,
-        sellPrice: 0,
-        stock: productData.quantity || 0,
-        minStock: 5,
+        buyPrice: productData.buyPrice || 0,
+        sellPrice: productData.sellPrice || 0,
+        quantity: productData.quantity || 0,
+        missingQuantity: productData.missingQuantity || 0,
+        surplusQuantity: productData.surplusQuantity || 0,
         expiryDate: '',
-        location: '',
+        location: productData.location || '',
+        primeNumber: productData.primeNumber || 0,
         image: ''
       });
       
@@ -181,8 +187,9 @@ const Inventory: React.FC = () => {
       size: '',
       buyPrice: 0,
       sellPrice: 0,
-      stock: 0,
-      minStock: 5,
+      quantity: 0,
+      missingQuantity: 0,
+      surplusQuantity: 0,
       expiryDate: '',
       location: '',
       image: ''
@@ -199,8 +206,9 @@ const Inventory: React.FC = () => {
       size: product.size || '',
       buyPrice: product.buyPrice,
       sellPrice: product.sellPrice,
-      stock: product.stock,
-      minStock: product.minStock,
+      quantity: product.stock,
+      missingQuantity: product.missingQuantity || 0,
+      surplusQuantity: product.surplusQuantity || 0,
       expiryDate: product.expiryDate || '',
       location: product.location || '',
       primeNumber: product.primeNumber || 0,
@@ -219,8 +227,9 @@ const Inventory: React.FC = () => {
       size: '',
       buyPrice: 0,
       sellPrice: 0,
-      stock: 0,
-      minStock: 5,
+      quantity: 0,
+      missingQuantity: 0,
+      surplusQuantity: 0,
       expiryDate: '',
       location: '',
       image: ''
@@ -241,10 +250,16 @@ const Inventory: React.FC = () => {
     }
 
     try {
+      // Mapper quantity vers stock pour l'API
+      const apiData = {
+        ...formData,
+        stock: formData.quantity
+      };
+      
       if (editingProduct) {
-        await updateProduct(editingProduct.id, formData);
+        await updateProduct(editingProduct.id, apiData);
       } else {
-        await createProduct(formData);
+        await createProduct(apiData);
       }
       
       closeModal();
@@ -395,9 +410,11 @@ const Inventory: React.FC = () => {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('code')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('name')}</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('stateQuantity')}</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('quantity')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('buyPrice')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('sellPrice')}</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Quantité Manquante</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Quantité Surplus</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('location')}</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">{t('actions')}</th>
               </tr>
@@ -418,6 +435,8 @@ const Inventory: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{product.buyPrice} DH</td>
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{product.sellPrice} DH</td>
+                  <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{product.missingQuantity || 0}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{product.surplusQuantity || 0}</td>
                   <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{product.location || '-'}</td>
                   <td className="py-3 px-4">
                     <div className="flex space-x-2">
@@ -554,13 +573,53 @@ const Inventory: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    {t('currentStock')}
+                    {t('quantity')}
                   </label>
                   <input
                     type="number"
                     min="0"
-                    value={formData.stock}
-                    onChange={(e) => handleInputChange('stock', parseInt(e.target.value) || 0)}
+                    value={formData.quantity}
+                    onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Quantité Manquante
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.missingQuantity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      handleInputChange('missingQuantity', value);
+                      if (value > 0) {
+                        handleInputChange('surplusQuantity', 0);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Quantité Surplus
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.surplusQuantity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      handleInputChange('surplusQuantity', value);
+                      if (value > 0) {
+                        handleInputChange('missingQuantity', 0);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="0"
                   />

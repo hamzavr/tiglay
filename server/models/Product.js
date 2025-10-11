@@ -73,6 +73,14 @@ const Product = sequelize.define('Product', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  missingQuantity: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  surplusQuantity: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true

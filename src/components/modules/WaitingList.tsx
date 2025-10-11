@@ -8,9 +8,11 @@ interface WaitingItem {
   name: string;
   code: string;
   quantity: number;
-  remainingQuantity?: number;
   unit: string;
-  unitPrice: number;
+  buyPrice: number;
+  sellPrice: number;
+  missingQuantity?: number;
+  surplusQuantity?: number;
   flag: WaitingFlag;
   createdAt: string;
 }
@@ -23,8 +25,69 @@ const WaitingList: React.FC = () => {
     try {
       const raw = localStorage.getItem('waitingListProducts');
       if (raw) {
-        setItems(JSON.parse(raw));
+        const parsedItems = JSON.parse(raw);
+        // Migration des anciens items vers la nouvelle structure
+        const migratedItems = parsedItems.map((item: any) => ({
+          ...item,
+          buyPrice: item.buyPrice || item.unitPrice || 0,
+          sellPrice: item.sellPrice || (item.unitPrice ? item.unitPrice * 1.5 : 0),
+          missingQuantity: item.missingQuantity || 0,
+          surplusQuantity: item.surplusQuantity || 0,
+          // Supprimer les anciens champs
+          unitPrice: undefined,
+          remainingQuantity: undefined
+        }));
+        setItems(migratedItems);
       }
+      
+       // Vérifier s'il y a des données pré-remplies
+       const prefilledData = localStorage.getItem('waitingListPrefilledData');
+       if (prefilledData) {
+         const data = JSON.parse(prefilledData);
+         
+         // Vérifier si le produit existe déjà dans la liste d'attente
+         const existingItem = migratedItems.find(item => item.code === data.code);
+         
+         if (existingItem) {
+           // Mettre à jour le produit existant
+           const updatedItems = migratedItems.map(item => 
+             item.id === existingItem.id 
+               ? {
+                   ...item,
+                   quantity: data.quantity,
+                   unit: data.unit,
+                   buyPrice: data.buyPrice,
+                   sellPrice: data.sellPrice,
+                   missingQuantity: data.missingQuantity,
+                   surplusQuantity: data.surplusQuantity,
+                   updatedAt: new Date().toISOString()
+                 }
+               : item
+           );
+           setItems(updatedItems);
+           alert('Produit mis à jour dans la liste d\'attente');
+         } else {
+           // Créer un nouveau produit
+           const newItem: WaitingItem = {
+             id: `item-${Date.now()}`,
+             name: data.name,
+             code: data.code,
+             quantity: data.quantity,
+             unit: data.unit,
+             buyPrice: data.buyPrice,
+             sellPrice: data.sellPrice,
+             missingQuantity: data.missingQuantity,
+             surplusQuantity: data.surplusQuantity,
+             flag: 'normal',
+             createdAt: new Date().toISOString()
+           };
+           
+           setItems([...migratedItems, newItem]);
+           alert('Produit ajouté à la liste d\'attente');
+         }
+         
+         localStorage.removeItem('waitingListPrefilledData');
+       }
     } catch (_) {
       setItems([]);
     }
@@ -34,6 +97,13 @@ const WaitingList: React.FC = () => {
     setItems(next);
     localStorage.setItem('waitingListProducts', JSON.stringify(next));
   };
+
+  // Sauvegarder les items dans localStorage quand ils changent
+  useEffect(() => {
+    if (items.length > 0) {
+      localStorage.setItem('waitingListProducts', JSON.stringify(items));
+    }
+  }, [items]);
 
   const removeItem = (id: string) => {
     persist(items.filter(i => i.id !== id));
@@ -45,7 +115,7 @@ const WaitingList: React.FC = () => {
     }
   };
 
-  const totalAmount = items.reduce((sum, it) => sum + (it.quantity * it.unitPrice), 0);
+  const totalAmount = items.reduce((sum, it) => sum + (it.quantity * (it.sellPrice || 0)), 0);
 
   return (
     <div className="space-y-4">
@@ -71,9 +141,10 @@ const WaitingList: React.FC = () => {
                 <th className="text-left px-4 py-2">{t('name')}</th>
                 <th className="text-left px-4 py-2">{t('code')}</th>
                 <th className="text-left px-4 py-2">{t('theQuantity')}</th>
-                <th className="text-left px-4 py-2">{t('remainingQuantity')}</th>
                 <th className="text-left px-4 py-2">{t('unit')}</th>
-                <th className="text-left px-4 py-2">{t('unitPrice')}</th>
+                <th className="text-left px-4 py-2">Prix de vente</th>
+                <th className="text-left px-4 py-2">Quantité Manquante</th>
+                <th className="text-left px-4 py-2">Quantité Surplus</th>
                 <th className="text-left px-4 py-2">{t('totalPrice')}</th>
                 <th className="text-left px-4 py-2">{t('actions')}</th>
               </tr>
@@ -84,18 +155,45 @@ const WaitingList: React.FC = () => {
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.name}</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.code}</td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.quantity}</td>
-                  <td className="px-4 py-2">
-                    <span className={`text-sm font-medium ${
-                      item.remainingQuantity && item.remainingQuantity > 0
-                        ? 'text-orange-600 dark:text-orange-400' 
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {item.remainingQuantity ? Math.abs(item.remainingQuantity) : 0}
-                    </span>
-                  </td>
                   <td className="px-4 py-2 text-gray-900 dark:text-white">{item.unit}</td>
-                  <td className="px-4 py-2 text-gray-900 dark:text-white">{item.unitPrice.toLocaleString()} DH</td>
-                  <td className="px-4 py-2 text-gray-900 dark:text-white">{(item.quantity * item.unitPrice).toLocaleString()} DH</td>
+                  <td className="px-4 py-2 text-gray-900 dark:text-white">{(item.sellPrice || 0).toLocaleString()} DH</td>
+                  <td className="px-4 py-2">
+                    <input
+                      type="number"
+                      value={item.missingQuantity || ''}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 0;
+                        const updatedItems = items.map(i => 
+                          i.id === item.id 
+                            ? { ...i, missingQuantity: value, surplusQuantity: value > 0 ? 0 : i.surplusQuantity }
+                            : i
+                        );
+                        persist(updatedItems);
+                      }}
+                      placeholder="0"
+                      min="0"
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </td>
+                  <td className="px-4 py-2">
+                    <input
+                      type="number"
+                      value={item.surplusQuantity || ''}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 0;
+                        const updatedItems = items.map(i => 
+                          i.id === item.id 
+                            ? { ...i, surplusQuantity: value, missingQuantity: value > 0 ? 0 : i.missingQuantity }
+                            : i
+                        );
+                        persist(updatedItems);
+                      }}
+                      placeholder="0"
+                      min="0"
+                      className="w-20 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </td>
+                  <td className="px-4 py-2 text-gray-900 dark:text-white">{(item.quantity * (item.sellPrice || 0)).toLocaleString()} DH</td>
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <button
@@ -132,9 +230,11 @@ const WaitingList: React.FC = () => {
                             name: item.name,
                             code: foundProduct ? foundProduct.code : item.code,
                             unit: foundProduct ? foundProduct.unit : item.unit,
-                            buyPrice: foundProduct ? foundProduct.buyPrice : item.unitPrice,
-                            sellPrice: foundProduct ? foundProduct.sellPrice : item.unitPrice * 1.5, // Prix de vente estimé
+                            buyPrice: foundProduct ? foundProduct.buyPrice : item.buyPrice,
+                            sellPrice: foundProduct ? foundProduct.sellPrice : item.sellPrice, // Prix de vente estimé
                             stock: item.quantity,
+                            missingQuantity: item.missingQuantity || 0,
+                            surplusQuantity: item.surplusQuantity || 0,
                             primeNumber: foundProduct ? foundProduct.primeNumber : 2,
                             location: foundProduct ? foundProduct.location : 'A1-B1'
                           };
@@ -148,38 +248,6 @@ const WaitingList: React.FC = () => {
                         className="px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white"
                       >
 {t('inventory')}
-                      </button>
-                      <button
-                        onClick={() => {
-                          // Logique du bouton Compléter
-                          if (item.remainingQuantity && item.remainingQuantity > 0) {
-                            const updatedItems = items.map(i => 
-                              i.id === item.id 
-                                ? { 
-                                    ...i, 
-                                    quantity: i.quantity + i.remainingQuantity, 
-                                    remainingQuantity: 0 
-                                  }
-                                : i
-                            );
-                            setItems(updatedItems);
-                            
-                            // Sauvegarder dans localStorage
-                            localStorage.setItem('waitingListProducts', JSON.stringify(updatedItems));
-                            
-                            alert('Quantité restante ajoutée à "La Quantité"');
-                          } else {
-                            alert('Aucune quantité restante à compléter');
-                          }
-                        }}
-                        disabled={!item.remainingQuantity || item.remainingQuantity <= 0}
-                        className={`px-2 py-1 text-xs rounded ${
-                          item.remainingQuantity && item.remainingQuantity > 0
-                            ? 'bg-green-600 hover:bg-green-700 text-white'
-                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                        }`}
-                      >
-{t('complete')}
                       </button>
                       <button onClick={() => removeItem(item.id)} className="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded">{t('remove')}</button>
                     </div>
