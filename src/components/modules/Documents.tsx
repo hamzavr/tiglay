@@ -1504,8 +1504,7 @@ const Documents: React.FC = () => {
                                   </thead>
                                   <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
                                     {products.map((product, index) => {
-                                      // Parser le produit pour extraire les informations
-                                      // Format: "• CODE - NOM: QUANTITÉ UNITÉ × PRIX DH = TOTAL DH"
+                                      // For display only - minimal parsing to show in table
                                       const productText = product.replace('• ', '');
                                       const parts = productText.split(': ');
                                       const nameCode = parts[0];
@@ -1520,23 +1519,6 @@ const Documents: React.FC = () => {
                                       const unit = quantityUnit[1] || '';
                                       const unitPrice = priceTotal[0] ? priceTotal[0].replace(' DH', '') : '';
                                       const total = priceTotal[1] ? priceTotal[1].replace(' DH', '') : '';
-                                      
-                                      // Store structured data in localStorage for PDF generation
-                                      const structuredItem = {
-                                        code: code,
-                                        name: name, // Preserve exact Arabic text
-                                        quantity: quantity,
-                                        unit: unit,
-                                        unitPrice: unitPrice,
-                                        total: total
-                                      };
-                                      
-                                      // Store in localStorage for PDF generation
-                                      const existingData = JSON.parse(localStorage.getItem(`document_${viewingDocument?.id}_structured_data`) || '[]');
-                                      if (!existingData.some((item: any) => item.code === code)) {
-                                        existingData.push(structuredItem);
-                                        localStorage.setItem(`document_${viewingDocument?.id}_structured_data`, JSON.stringify(existingData));
-                                      }
                                       
                                       return (
                                         <tr key={index}>

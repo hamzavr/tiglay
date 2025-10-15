@@ -188,6 +188,17 @@ class PDFGenerator {
     this.doc.line(70, docDetailsY - 5, 70, docDetailsY + 5);
     this.doc.line(140, docDetailsY - 5, 140, docDetailsY + 5);
 
+    // Parse order details from notes
+    let orderInfo: any = {};
+    if (documentData.notes) {
+      orderInfo = this.parseOrderNotes(documentData.notes);
+    }
+
+    // Order details
+    if (orderInfo.deliveryDate) {
+      this.addText(`Date de livraison souhaitée: ${orderInfo.deliveryDate}`, 15, 80, 8);
+    }
+
     // Table headers
     const headers = ['Code', 'Description', 'Qté', 'P.U', 'Total'];
     
@@ -384,20 +395,40 @@ class PDFGenerator {
     
     let tableData: any[][] = [];
     
-    // Try to get structured data from localStorage first (from the view table)
-    const structuredData = localStorage.getItem(`document_${documentData.id}_structured_data`);
-    if (structuredData) {
-      try {
-        const parsedData = JSON.parse(structuredData);
-        tableData = parsedData.map((item: any) => [
-          item.code || '',
-          item.name || '', // Use the exact name from structured data
-          item.quantity || '',
-          item.unitPrice || '',
-          item.total || ''
-        ]);
-      } catch (error) {
-        console.error('Error parsing structured data:', error);
+    // Use the original notes text directly - NO localStorage, NO parsing
+    if (documentData.notes && documentData.notes.includes('Produits commandés:')) {
+      const lines = documentData.notes.split('\n');
+      const productsStartIndex = lines.findIndex(line => line.includes('Produits commandés:'));
+      const notesStartIndex = lines.findIndex(line => line.includes('Notes:'));
+      
+      if (productsStartIndex !== -1) {
+        const products = lines.slice(productsStartIndex + 1, notesStartIndex).filter(line => line.trim().startsWith('•'));
+        tableData = products.map((product) => {
+          // Use the EXACT original text from notes - no localStorage, no modifications
+          const originalText = product;
+          
+          // Minimal parsing to extract fields - preserve Arabic text exactly
+          const productText = originalText.replace('• ', '');
+          const parts = productText.split(': ');
+          const nameCode = parts[0] || '';
+          const details = parts[1] || '';
+          
+          // Extract code and name - preserve Arabic text exactly
+          const firstDashIndex = nameCode.indexOf(' - ');
+          const code = firstDashIndex > 0 ? nameCode.substring(0, firstDashIndex) : nameCode;
+          const name = firstDashIndex > 0 ? nameCode.substring(firstDashIndex + 3) : nameCode;
+          
+          // Extract details - preserve exactly
+          const detailsMatch = details.match(/(\d+(?:\.\d+)?)\s+(\w+)\s+×\s+([\d,]+)\s+DH\s+=\s+([\d,]+)\s+DH/);
+          
+          return [
+            code, // Copy exactly
+            name, // Copy exactly - no modification of Arabic text
+            detailsMatch ? detailsMatch[1] : '',
+            detailsMatch ? detailsMatch[3] : '',
+            detailsMatch ? detailsMatch[4] : ''
+          ];
+        });
       }
     }
     
