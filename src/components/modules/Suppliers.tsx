@@ -93,8 +93,8 @@ const Suppliers: React.FC = () => {
     return primes[hash % primes.length];
   };
 
-  // Liste des produits de plomberie
-  const plumbingProducts = [
+  // État pour les produits de plomberie (mis à jour dynamiquement depuis localStorage)
+  const [plumbingProducts, setPlumbingProducts] = useState([
     { name: 'Tuyau PVC 20mm', code: 'PLO-001', unit: 'M', buyPrice: 12.50, sellPrice: 18.00, primeNumber: 2, location: 'A1-B1' },
     { name: 'Tuyau PVC 25mm', code: 'PLO-002', unit: 'M', buyPrice: 15.00, sellPrice: 22.00, primeNumber: 3, location: 'A1-B2' },
     { name: 'Tuyau PVC 32mm', code: 'PLO-003', unit: 'M', buyPrice: 18.50, sellPrice: 28.00, primeNumber: 5, location: 'A1-B3' },
@@ -115,13 +115,57 @@ const Suppliers: React.FC = () => {
     { name: 'Collier de serrage 20mm', code: 'PLO-018', unit: 'PCS', buyPrice: 2.50, sellPrice: 4.50, primeNumber: 61, location: 'A5-B1' },
     { name: 'Collier de serrage 25mm', code: 'PLO-019', unit: 'PCS', buyPrice: 3.00, sellPrice: 5.50, primeNumber: 67, location: 'A5-B2' },
     { name: 'Collier de serrage 32mm', code: 'PLO-020', unit: 'PCS', buyPrice: 3.50, sellPrice: 6.50, primeNumber: 71, location: 'A5-B3' }
-  ];
+  ]);
 
   useEffect(() => {
     fetchSuppliers({ search: searchTerm });
     // Charger le catalogue produits pour suggestions
     fetchProducts({});
   }, [searchTerm]);
+
+  // Charger les produits depuis localStorage et les mettre à jour automatiquement
+  useEffect(() => {
+    const loadProductsFromStorage = () => {
+      const savedProducts = localStorage.getItem('productsList');
+      if (savedProducts) {
+        try {
+          const parsedProducts = JSON.parse(savedProducts);
+          setPlumbingProducts(parsedProducts);
+        } catch (error) {
+          console.error('Error parsing products from localStorage:', error);
+        }
+      }
+    };
+
+    // Charger au montage du composant
+    loadProductsFromStorage();
+
+    // Écouter les changements dans localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'productsList') {
+        loadProductsFromStorage();
+      }
+    };
+
+    // Écouter les changements de localStorage
+    window.addEventListener('storage', handleStorageChange);
+
+    // Écouter les événements personnalisés pour les mises à jour dans la même fenêtre
+    const handleProductsUpdate = () => {
+      loadProductsFromStorage();
+    };
+
+    window.addEventListener('productsUpdated', handleProductsUpdate);
+
+    // Vérifier périodiquement les changements (fallback)
+    const intervalId = setInterval(loadProductsFromStorage, 2000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('productsUpdated', handleProductsUpdate);
+      clearInterval(intervalId);
+    };
+  }, []);
 
   // Ensure suppliers is always an array
   const safeSuppliers = Array.isArray(suppliers) ? suppliers : [];
@@ -1014,16 +1058,22 @@ const Suppliers: React.FC = () => {
 
             {(() => {
               const allOrders: any[] = Array.isArray(supplierOrders) ? (supplierOrders as any) : [];
+              console.log('Supplier orders data:', allOrders);
+              
               if (allOrders.length === 0) {
                 return (
                   <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-                    {t('noOrdersFound')}
+                    <div className="text-lg font-medium mb-2">{t('noOrdersFound')}</div>
+                    <div className="text-sm">{t('noOrdersDescription')}</div>
                   </div>
                 );
               }
+              
               return (
                 <div className="space-y-4">
                   {allOrders.map((order) => {
+                    console.log('Processing order:', order);
+                    
                     // Parse items from JSON if it's a string, otherwise use array
                     let items: any[] = [];
                     if (typeof order.items === 'string') {
@@ -1037,9 +1087,46 @@ const Suppliers: React.FC = () => {
                       items = order.items;
                     }
                     
-                    // If no items from items field, try to parse from notes
-                    if (items.length === 0 && order.notes) {
-                      items = parseItemsFromNotes(order.notes);
+                    // If no items from items field, try to parse from notes (for supplier purchase orders)
+                    if (items.length === 0 && order.notes && order.type === 'supplier_purchase_order') {
+                      const lines = order.notes.split('\n');
+                      const productsStartIndex = lines.findIndex(line => line.includes('Produits commandés:'));
+                      const notesStartIndex = lines.findIndex(line => line.includes('Notes:'));
+                      
+                      if (productsStartIndex !== -1) {
+                        const products = lines.slice(productsStartIndex + 1, notesStartIndex).filter(line => line.trim().startsWith('•'));
+                        items = products.map((product, index) => {
+                          // Parser le produit pour extraire les informations
+                          // Format: "• CODE - NOM: QUANTITÉ UNITÉ × PRIX DH = TOTAL DH"
+                          const productText = product.replace('• ', '');
+                          const parts = productText.split(': ');
+                          if (parts.length < 2) return null;
+                          
+                          const nameCode = parts[0].trim();
+                          const details = parts[1].trim();
+                          
+                          // Extraire le nom et le code
+                          const nameCodeParts = nameCode.split(' - ');
+                          const name = nameCodeParts.length > 1 ? nameCodeParts[1] : nameCodeParts[0];
+                          const code = nameCodeParts.length > 1 ? nameCodeParts[0] : '';
+                          
+                          // Parser les détails: "QUANTITÉ UNITÉ × PRIX DH = TOTAL DH"
+                          const quantityMatch = details.match(/(\d+(?:\.\d+)?)\s+(\w+)\s+×\s+([\d.]+)\s+DH\s+=\s+([\d.]+)\s+DH/);
+                          
+                          if (quantityMatch) {
+                            return {
+                              name: name,
+                              code: code,
+                              quantity: parseFloat(quantityMatch[1]),
+                              unit: quantityMatch[2],
+                              unitPrice: parseFloat(quantityMatch[3]),
+                              total: parseFloat(quantityMatch[4])
+                            };
+                          }
+                          
+                          return null;
+                        }).filter(item => item !== null);
+                      }
                     }
                     
                     const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleString('fr-FR') : '—';
@@ -1051,33 +1138,59 @@ const Suppliers: React.FC = () => {
                       paid: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
                       cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                     };
+                    
                     return (
-                      <div key={order.id} className="border border-gray-200 dark:border-gray-700 rounded-lg">
-                        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap justify-between items-center">
-                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('orderNumber')}: <span className="font-medium">{order.number || order.id || '—'}</span></div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('orderDate')}: <span className="font-medium">{dateStr}</span></div>
-                          <div className="text-sm text-gray-700 dark:text-gray-300">{t('orderTotal')}: <span className="font-semibold">{total.toLocaleString()} DH</span></div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
-                            {status === 'draft' ? t('orderStatusDraft') : 
-                             status === 'sent' ? t('orderStatusSent') : 
-                             status === 'paid' ? t('orderStatusPaid') : 
-                             status === 'cancelled' ? t('orderStatusCancelled') : status}
-                          </span>
+                      <div key={order.id} className="border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 flex flex-wrap justify-between items-center gap-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                              <span className="font-medium">{t('orderNumber')}:</span> 
+                              <span className="ml-1 font-semibold">{order.number || order.id || '—'}</span>
+                            </div>
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                              <span className="font-medium">{t('orderDate')}:</span> 
+                              <span className="ml-1">{dateStr}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                              <span className="font-medium">{t('orderTotal')}:</span> 
+                              <span className="ml-1 font-semibold text-green-600 dark:text-green-400">{total.toLocaleString()} DH</span>
+                            </div>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[status as keyof typeof statusColors]}`}>
+                              {status === 'draft' ? t('orderStatusDraft') : 
+                               status === 'sent' ? t('orderStatusSent') : 
+                               status === 'paid' ? t('orderStatusPaid') : 
+                               status === 'cancelled' ? t('orderStatusCancelled') : status}
+                            </span>
+                          </div>
                         </div>
                         {items.length > 0 ? (
-                          <div className="overflow-visible">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-300">
-                                  <th className="px-3 py-2 text-left">{t('orderItemName')}</th>
-                                  <th className="px-3 py-2 text-left">{t('orderItemCode')}</th>
-                                  <th className="px-3 py-2 text-right">{t('orderItemQuantity')}</th>
-                                  <th className="px-3 py-2 text-right">{t('orderItemUnit')}</th>
-                                  <th className="px-3 py-2 text-right">{t('orderItemUnitPrice')}</th>
-                                  <th className="px-3 py-2 text-right">{t('orderItemTotal')}</th>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border border-gray-200 dark:border-gray-600 rounded-lg">
+                              <thead className="bg-gray-100 dark:bg-gray-600">
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    {t('code')}
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    {t('name')}
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    {t('quantity')}
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    {t('unit')}
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    {t('unitPrice')}
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                    {t('total')}
+                                  </th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                              <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
                                 {items.map((item, idx) => {
                                   const name = item.name || '—';
                                   const code = item.code || '—';
@@ -1086,13 +1199,13 @@ const Suppliers: React.FC = () => {
                                   const price = typeof item.unitPrice === 'number' ? item.unitPrice : (Number(item.unitPrice) || 0);
                                   const rowTotal = typeof item.total === 'number' ? item.total : (qty * price);
                                   return (
-                                    <tr key={idx}>
-                                      <td className="px-3 py-2">{name}</td>
-                                      <td className="px-3 py-2">{code}</td>
-                                      <td className="px-3 py-2 text-right">{qty}</td>
-                                      <td className="px-3 py-2 text-right">{unit}</td>
-                                      <td className="px-3 py-2 text-right">{price.toLocaleString()} DH</td>
-                                      <td className="px-3 py-2 text-right">{rowTotal.toLocaleString()} DH</td>
+                                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                      <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{code}</td>
+                                      <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{name}</td>
+                                      <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{qty}</td>
+                                      <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{unit}</td>
+                                      <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{price.toLocaleString()} DH</td>
+                                      <td className="px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white">{rowTotal.toLocaleString()} DH</td>
                                     </tr>
                                   );
                                 })}
@@ -1101,7 +1214,7 @@ const Suppliers: React.FC = () => {
                           </div>
                         ) : (
                           <div className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
-                            {t('noOrdersFound')}
+                            <div className="text-sm">{t('noItemsInOrder')}</div>
                           </div>
                         )}
                       </div>

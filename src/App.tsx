@@ -20,23 +20,32 @@ function AppContent() {
   const { user, loading, hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Gérer la navigation via hash
+  // Charger l'onglet actif depuis localStorage au démarrage
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash && ['dashboard', 'inventory', 'products-list', 'suppliers', 'clients', 'documents', 'waiting', 'reports', 'settings'].includes(hash)) {
-        setActiveTab(hash);
+    const savedTab = localStorage.getItem('activeTab');
+    if (savedTab && ['dashboard', 'inventory', 'products-list', 'suppliers', 'clients', 'documents', 'waiting', 'reports', 'settings'].includes(savedTab)) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  // Sauvegarder l'onglet actif dans localStorage
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  // Écouter les événements de navigation
+  useEffect(() => {
+    const handleNavigateToTab = (event: CustomEvent) => {
+      const tab = event.detail;
+      if (['dashboard', 'inventory', 'products-list', 'suppliers', 'clients', 'documents', 'waiting', 'reports', 'settings'].includes(tab)) {
+        setActiveTab(tab);
       }
     };
 
-    // Vérifier le hash initial
-    handleHashChange();
-
-    // Écouter les changements de hash
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('navigateToTab', handleNavigateToTab as EventListener);
     
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('navigateToTab', handleNavigateToTab as EventListener);
     };
   }, []);
 

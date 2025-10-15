@@ -124,12 +124,32 @@ router.get('/:id/orders', auth, async (req, res) => {
         supplierId: req.params.id,
         type: 'supplier_purchase_order'
       },
+      include: [
+        {
+          model: Supplier,
+          attributes: ['id', 'name', 'phone', 'email']
+        }
+      ],
       order: [['createdAt', 'DESC']]
     });
 
-    res.json(orders);
+    // Format the orders to include proper structure
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      number: order.number,
+      type: order.type,
+      status: order.status || 'draft',
+      amount: order.amount || 0,
+      items: order.items || [],
+      notes: order.notes || '',
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      supplier: order.Supplier
+    }));
+
+    res.json(formattedOrders);
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching supplier orders:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

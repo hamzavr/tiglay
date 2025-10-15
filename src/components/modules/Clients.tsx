@@ -287,7 +287,9 @@ const Clients: React.FC = () => {
               // Auto-remplir le prix unitaire avec le prix de vente
               updatedItem.unitPrice = found.sellPrice || updatedItem.unitPrice;
               // Recalculer le total après auto-remplissage
-              updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+              const quantity = parseFloat(updatedItem.quantity) || 0;
+              const unitPrice = parseFloat(updatedItem.unitPrice) || 0;
+              updatedItem.total = Math.round(quantity * unitPrice * 100) / 100;
               const priceFromHistory = getLastPaidPrice(found.id);
               updatedItem.lastUnitPrice = priceFromHistory !== undefined ? priceFromHistory : (lastPrice !== undefined ? lastPrice : undefined);
               if (updatedItem.unitPrice === 0 && updatedItem.lastUnitPrice !== undefined) {
@@ -342,7 +344,9 @@ const Clients: React.FC = () => {
           }
           // Recalculer le total
           if (field === 'quantity' || field === 'unitPrice') {
-            updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+            const quantity = parseFloat(updatedItem.quantity) || 0;
+            const unitPrice = parseFloat(updatedItem.unitPrice) || 0;
+            updatedItem.total = Math.round(quantity * unitPrice * 100) / 100;
           }
           return updatedItem;
         }
@@ -370,7 +374,12 @@ const Clients: React.FC = () => {
   }, [salesList]);
 
   const getSaleTotal = () => {
-    return saleForm.items.reduce((sum, item) => sum + item.total, 0);
+    const total = saleForm.items.reduce((sum, item) => {
+      const itemTotal = parseFloat(item.total) || 0;
+      return sum + itemTotal;
+    }, 0);
+    // S'assurer que le total est un nombre valide avec au maximum 2 décimales
+    return Math.round(total * 100) / 100;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -424,6 +433,7 @@ const Clients: React.FC = () => {
           id: it.productId || product?.id,
           quantity: it.quantity,
           price: it.unitPrice,
+          unit: it.unit,
         };
       });
 

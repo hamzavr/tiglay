@@ -43,6 +43,12 @@ router.post('/', auth, async (req, res) => {
     const { items, clientId, total } = req.body;
         
     console.log('Sale creation request:', { items, clientId, total });
+    console.log('Items details:', items.map(item => ({ 
+      id: item.id, 
+      quantity: item.quantity, 
+      price: item.price, 
+      unit: item.unit 
+    })));
 
     // Validate required fields
     if (!items || items.length === 0) {
@@ -63,13 +69,34 @@ router.post('/', auth, async (req, res) => {
 
     // Create sale items and update stock
     for (const item of items) {
-      await SaleItem.create({
-        saleId: sale.id,
-        productId: item.id,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.quantity * item.price
-      });
+      console.log('Creating SaleItem for:', item);
+      try {
+        const saleItem = await SaleItem.create({
+          saleId: sale.id,
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          unit: item.unit || 'U',
+          total: item.quantity * item.price
+        });
+        console.log('SaleItem created successfully:', saleItem.id);
+      } catch (createError) {
+        console.error('Error creating SaleItem:', createError);
+        // Si l'erreur est liée au champ 'unit', essayer sans ce champ
+        if (createError.message && createError.message.includes('unit')) {
+          console.log('Retrying without unit field...');
+          await SaleItem.create({
+            saleId: sale.id,
+            productId: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.quantity * item.price
+          });
+          console.log('SaleItem created successfully without unit field');
+        } else {
+          throw createError;
+        }
+      }
 
       const product = await Product.findByPk(item.id);
       await product.update({
@@ -81,9 +108,13 @@ router.post('/', auth, async (req, res) => {
     // Update client total purchases
     if (clientId) {
       const client = await Client.findByPk(clientId);
-      await client.update({
-        totalPurchases: client.totalPurchases + parseFloat(total)
-      });
+      // Nettoyer le total pour éviter les erreurs de format numérique
+      const cleanTotal = parseFloat(total.toString().replace(/[^\d.-]/g, ''));
+      if (!isNaN(cleanTotal)) {
+        await client.update({
+          totalPurchases: client.totalPurchases + cleanTotal
+        });
+      }
     }
 
     // Generate PDF invoice

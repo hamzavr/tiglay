@@ -1521,6 +1521,23 @@ const Documents: React.FC = () => {
                                       const unitPrice = priceTotal[0] ? priceTotal[0].replace(' DH', '') : '';
                                       const total = priceTotal[1] ? priceTotal[1].replace(' DH', '') : '';
                                       
+                                      // Store structured data in localStorage for PDF generation
+                                      const structuredItem = {
+                                        code: code,
+                                        name: name, // Preserve exact Arabic text
+                                        quantity: quantity,
+                                        unit: unit,
+                                        unitPrice: unitPrice,
+                                        total: total
+                                      };
+                                      
+                                      // Store in localStorage for PDF generation
+                                      const existingData = JSON.parse(localStorage.getItem(`document_${viewingDocument?.id}_structured_data`) || '[]');
+                                      if (!existingData.some((item: any) => item.code === code)) {
+                                        existingData.push(structuredItem);
+                                        localStorage.setItem(`document_${viewingDocument?.id}_structured_data`, JSON.stringify(existingData));
+                                      }
+                                      
                                       return (
                                         <tr key={index}>
                                           <td className="px-3 py-2 text-sm text-gray-900 dark:text-white font-mono">
@@ -1544,12 +1561,12 @@ const Documents: React.FC = () => {
                                           <td className="px-3 py-2">
                                             <button
                                               onClick={() => {
-                                                // Vérifier si le produit existe déjà dans la liste d'attente
-                                                const existingWaitingList = JSON.parse(localStorage.getItem('waitingListProducts') || '[]');
-                                                const existingItem = existingWaitingList.find((item: any) => item.code === code);
+                                                // Vérifier si le produit a déjà été traité (ajouté à l'inventaire)
+                                                const processedProducts = JSON.parse(localStorage.getItem('processedProducts') || '[]');
+                                                const isProcessed = processedProducts.some((p: any) => p.code === code && p.documentId === viewingDocument?.id);
                                                 
-                                                if (existingItem) {
-                                                  alert('Ce produit existe déjà dans la liste d\'attente');
+                                                if (isProcessed) {
+                                                  alert('Ce produit a déjà été traité et ajouté à l\'inventaire');
                                                   return;
                                                 }
                                                 
@@ -1562,11 +1579,16 @@ const Documents: React.FC = () => {
                                                   buyPrice: parseFloat(unitPrice),
                                                   sellPrice: parseFloat(unitPrice) * 1.5, // Prix de vente estimé
                                                   missingQuantity: 0,
-                                                  surplusQuantity: 0
+                                                  surplusQuantity: 0,
+                                                  isUpdate: true, // Indicateur que c'est une mise à jour
+                                                  timestamp: Date.now(), // Timestamp pour éviter les doublons
+                                                  documentId: viewingDocument?.id, // ID du document pour le suivi
+                                                  supplierId: viewingDocument?.supplier?.id // ID du fournisseur
                                                 };
                                                 
                                                 localStorage.setItem('waitingListPrefilledData', JSON.stringify(prefilledData));
-                                                window.location.hash = '#waiting';
+                                                // Déclencher un événement pour changer d'onglet
+                                                window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'waiting' }));
                                               }}
                                               className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
                                             >

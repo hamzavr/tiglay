@@ -15,6 +15,8 @@ interface WaitingItem {
   surplusQuantity?: number;
   flag: WaitingFlag;
   createdAt: string;
+  documentId?: string; // ID du document source
+  supplierId?: string; // ID du fournisseur
 }
 
 const WaitingList: React.FC = () => {
@@ -24,6 +26,8 @@ const WaitingList: React.FC = () => {
   useEffect(() => {
     try {
       const raw = localStorage.getItem('waitingListProducts');
+      let currentItems: WaitingItem[] = [];
+      
       if (raw) {
         const parsedItems = JSON.parse(raw);
         // Migration des anciens items vers la nouvelle structure
@@ -37,6 +41,7 @@ const WaitingList: React.FC = () => {
           unitPrice: undefined,
           remainingQuantity: undefined
         }));
+        currentItems = migratedItems;
         setItems(migratedItems);
       }
       
@@ -46,11 +51,20 @@ const WaitingList: React.FC = () => {
          const data = JSON.parse(prefilledData);
          
          // Vérifier si le produit existe déjà dans la liste d'attente
-         const existingItem = migratedItems.find(item => item.code === data.code);
+         const existingItem = currentItems.find(item => item.code === data.code);
          
          if (existingItem) {
+           // Vérifier si les données ont vraiment changé
+           const hasChanges = 
+             existingItem.quantity !== data.quantity ||
+             existingItem.unit !== data.unit ||
+             existingItem.buyPrice !== data.buyPrice ||
+             existingItem.sellPrice !== data.sellPrice ||
+             existingItem.missingQuantity !== data.missingQuantity ||
+             existingItem.surplusQuantity !== data.surplusQuantity;
+
            // Mettre à jour le produit existant
-           const updatedItems = migratedItems.map(item => 
+           const updatedItems = currentItems.map(item => 
              item.id === existingItem.id 
                ? {
                    ...item,
@@ -60,12 +74,24 @@ const WaitingList: React.FC = () => {
                    sellPrice: data.sellPrice,
                    missingQuantity: data.missingQuantity,
                    surplusQuantity: data.surplusQuantity,
+                   documentId: data.documentId, // Mettre à jour l'ID du document
+                   supplierId: data.supplierId, // Mettre à jour l'ID du fournisseur
                    updatedAt: new Date().toISOString()
                  }
                : item
            );
            setItems(updatedItems);
-           alert('Produit mis à jour dans la liste d\'attente');
+           localStorage.setItem('waitingListProducts', JSON.stringify(updatedItems));
+           
+           if (hasChanges) {
+             if (data.isUpdate) {
+               alert('Produit modifié dans la liste d\'attente');
+             } else {
+               alert('Produit mis à jour dans la liste d\'attente');
+             }
+           } else {
+             alert('Produit déjà présent dans la liste d\'attente (aucune modification)');
+           }
          } else {
            // Créer un nouveau produit
            const newItem: WaitingItem = {
@@ -79,15 +105,19 @@ const WaitingList: React.FC = () => {
              missingQuantity: data.missingQuantity,
              surplusQuantity: data.surplusQuantity,
              flag: 'normal',
-             createdAt: new Date().toISOString()
+             createdAt: new Date().toISOString(),
+             documentId: data.documentId, // Inclure l'ID du document
+             supplierId: data.supplierId // Inclure l'ID du fournisseur
            };
            
-           setItems([...migratedItems, newItem]);
+           const updatedItems = [...currentItems, newItem];
+           setItems(updatedItems);
+           localStorage.setItem('waitingListProducts', JSON.stringify(updatedItems));
            alert('Produit ajouté à la liste d\'attente');
          }
          
          localStorage.removeItem('waitingListPrefilledData');
-       }
+      }
     } catch (_) {
       setItems([]);
     }
@@ -103,6 +133,94 @@ const WaitingList: React.FC = () => {
     if (items.length > 0) {
       localStorage.setItem('waitingListProducts', JSON.stringify(items));
     }
+  }, [items]);
+
+  // Gérer les données pré-remplies qui arrivent après le chargement initial
+  useEffect(() => {
+    const handlePrefilledData = () => {
+      const prefilledData = localStorage.getItem('waitingListPrefilledData');
+      if (prefilledData) {
+        try {
+          const data = JSON.parse(prefilledData);
+          
+          // Vérifier si le produit existe déjà dans la liste d'attente
+          const existingItem = items.find(item => item.code === data.code);
+          
+          if (existingItem) {
+            // Vérifier si les données ont vraiment changé
+            const hasChanges = 
+              existingItem.quantity !== data.quantity ||
+              existingItem.unit !== data.unit ||
+              existingItem.buyPrice !== data.buyPrice ||
+              existingItem.sellPrice !== data.sellPrice ||
+              existingItem.missingQuantity !== data.missingQuantity ||
+              existingItem.surplusQuantity !== data.surplusQuantity;
+
+            // Mettre à jour le produit existant
+            const updatedItems = items.map(item => 
+              item.id === existingItem.id 
+                ? {
+                    ...item,
+                    quantity: data.quantity,
+                    unit: data.unit,
+                    buyPrice: data.buyPrice,
+                    sellPrice: data.sellPrice,
+                    missingQuantity: data.missingQuantity,
+                    surplusQuantity: data.surplusQuantity,
+                    documentId: data.documentId, // Mettre à jour l'ID du document
+                    supplierId: data.supplierId, // Mettre à jour l'ID du fournisseur
+                    updatedAt: new Date().toISOString()
+                  }
+                : item
+            );
+            setItems(updatedItems);
+            
+            if (hasChanges) {
+              if (data.isUpdate) {
+                alert('Produit modifié dans la liste d\'attente');
+              } else {
+                alert('Produit mis à jour dans la liste d\'attente');
+              }
+            } else {
+              alert('Produit déjà présent dans la liste d\'attente (aucune modification)');
+            }
+          } else {
+            // Créer un nouveau produit
+            const newItem: WaitingItem = {
+              id: `item-${Date.now()}`,
+              name: data.name,
+              code: data.code,
+              quantity: data.quantity,
+              unit: data.unit,
+              buyPrice: data.buyPrice,
+              sellPrice: data.sellPrice,
+              missingQuantity: data.missingQuantity,
+              surplusQuantity: data.surplusQuantity,
+              flag: 'normal',
+              createdAt: new Date().toISOString(),
+              documentId: data.documentId, // Inclure l'ID du document
+              supplierId: data.supplierId // Inclure l'ID du fournisseur
+            };
+            
+            setItems(prev => [...prev, newItem]);
+            alert('Produit ajouté à la liste d\'attente');
+          }
+          
+          localStorage.removeItem('waitingListPrefilledData');
+        } catch (error) {
+          console.error('Erreur lors du traitement des données pré-remplies:', error);
+          localStorage.removeItem('waitingListPrefilledData');
+        }
+      }
+    };
+
+    // Vérifier immédiatement
+    handlePrefilledData();
+
+    // Écouter les changements de localStorage
+    const interval = setInterval(handlePrefilledData, 100);
+    
+    return () => clearInterval(interval);
   }, [items]);
 
   const removeItem = (id: string) => {
@@ -230,20 +348,21 @@ const WaitingList: React.FC = () => {
                             name: item.name,
                             code: foundProduct ? foundProduct.code : item.code,
                             unit: foundProduct ? foundProduct.unit : item.unit,
-                            buyPrice: foundProduct ? foundProduct.buyPrice : item.buyPrice,
+                            buyPrice: item.buyPrice, // Utiliser le prix unitaire du document (Bon de commande fournisseur)
                             sellPrice: foundProduct ? foundProduct.sellPrice : item.sellPrice, // Prix de vente estimé
                             stock: item.quantity,
                             missingQuantity: item.missingQuantity || 0,
                             surplusQuantity: item.surplusQuantity || 0,
                             primeNumber: foundProduct ? foundProduct.primeNumber : 2,
-                            location: foundProduct ? foundProduct.location : 'A1-B1'
+                            location: foundProduct ? foundProduct.location : 'A1-B1',
+                            supplierId: item.supplierId // Inclure l'ID du fournisseur
                           };
                           
                           // Mémoriser l'ID à retirer après ajout
                           localStorage.setItem('waitingListRemoveId', item.id);
                           localStorage.setItem('prefilledProductData', JSON.stringify(prefilled));
-                          // Naviguer à l'inventaire
-                          window.location.hash = '#inventory';
+                          // Déclencher un événement pour changer d'onglet
+                          window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'inventory' }));
                         }}
                         className="px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white"
                       >

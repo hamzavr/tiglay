@@ -18,6 +18,11 @@ const SaleItem = sequelize.define('SaleItem', {
   total: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
+  },
+  unit: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'U'
   }
 });
 

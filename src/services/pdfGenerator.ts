@@ -42,15 +42,35 @@ class PDFGenerator {
     this.companyInfo = companyInfo;
   }
 
-  private addArabicText(text: string, x: number, y: number, fontSize: number = 12) {
-    // For Arabic text support, we need to handle RTL
+  private isArabic(text: string): boolean {
+    // Check if text contains Arabic characters
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    return arabicRegex.test(text);
+  }
+
+  private addText(text: string, x: number, y: number, fontSize: number = 12, align: 'left' | 'center' | 'right' = 'left') {
     this.doc.setFontSize(fontSize);
-    this.doc.text(text, x, y, { align: 'right' });
+    
+    // For Arabic text, copy exactly without any modification
+    if (this.isArabic(text)) {
+      // For Arabic text, use right alignment and copy exactly as is
+      this.doc.text(text, x, y, { align: 'right' });
+    } else {
+      // For French/Latin text, do minimal cleaning only if needed
+      const cleanText = text
+        .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width characters
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      this.doc.text(cleanText, x, y, { align });
+    }
+  }
+
+  private addArabicText(text: string, x: number, y: number, fontSize: number = 12) {
+    this.addText(text, x, y, fontSize, 'right');
   }
 
   private addFrenchText(text: string, x: number, y: number, fontSize: number = 12, align: 'left' | 'center' | 'right' = 'left') {
-    this.doc.setFontSize(fontSize);
-    this.doc.text(text, x, y, { align });
+    this.addText(text, x, y, fontSize, align);
   }
 
   private drawDottedLine(x1: number, y1: number, x2: number, y2: number) {
@@ -90,9 +110,7 @@ class PDFGenerator {
       
       // Add header text
       this.doc.setTextColor(0, 0, 0);
-      this.doc.setFontSize(8);
-      const textX = x + (colWidth / 2);
-      this.doc.text(header, textX, startY + 5, { align: 'center' });
+      this.addText(header, x + (colWidth / 2), startY + 5, 8, 'center');
     });
 
     // Draw vertical lines for columns
@@ -113,9 +131,7 @@ class PDFGenerator {
         const x = margin + (colIndex * colWidth);
         
         const text = typeof cell === 'number' ? cell.toLocaleString() : cell;
-        const textX = x + (colWidth / 2);
-        this.doc.setFontSize(7);
-        this.doc.text(text.toString(), textX, y + 5, { align: 'center' });
+        this.addText(text.toString(), x + (colWidth / 2), y + 5, 7, 'center');
       });
     });
   }
@@ -126,17 +142,22 @@ class PDFGenerator {
     
     lines.forEach(line => {
       if (line.includes('Date de livraison souhaitée:')) {
-        orderInfo.deliveryDate = line.split(':')[1]?.trim();
+        const colonIndex = line.indexOf(':');
+        orderInfo.deliveryDate = colonIndex > 0 ? line.substring(colonIndex + 1) : '';
       } else if (line.includes('Conditions de paiement:')) {
-        orderInfo.paymentTerms = line.split(':')[1]?.trim();
+        const colonIndex = line.indexOf(':');
+        orderInfo.paymentTerms = colonIndex > 0 ? line.substring(colonIndex + 1) : '';
       } else if (line.includes('Total:')) {
-        orderInfo.total = line.split(':')[1]?.trim();
+        const colonIndex = line.indexOf(':');
+        orderInfo.total = colonIndex > 0 ? line.substring(colonIndex + 1) : '';
       } else if (line.includes('Produits commandés:')) {
         orderInfo.products = [];
       } else if (line.startsWith('•') && orderInfo.products) {
-        orderInfo.products.push(line.substring(1).trim());
-      } else if (line.includes('Notes:') && line.split('Notes:').length > 1) {
-        orderInfo.notes = line.split('Notes:')[1]?.trim();
+        // Copy exactly without any modification - preserve Arabic text exactly as is
+        orderInfo.products.push(line.substring(1));
+      } else if (line.includes('Notes:')) {
+        const notesIndex = line.indexOf('Notes:');
+        orderInfo.notes = notesIndex > 0 ? line.substring(notesIndex + 6) : '';
       }
     });
     
@@ -328,10 +349,10 @@ class PDFGenerator {
     this.addFrenchText('1/1', 190, 15, 8);
     
     // Document title (centered)
-    this.addFrenchText('BON DE COMMANDE FOURNISSEUR', 105, 25, 16, 'center');
+    this.addText('BON DE COMMANDE FOURNISSEUR', 105, 25, 16, 'center');
     
     // Company name
-    this.addFrenchText(this.COMPANY_NAME, 190, 35, 14, 'right');
+    this.addText(this.COMPANY_NAME, 190, 35, 14, 'right');
     
     // Dotted line separator
     this.drawDottedLine(15, 50, 195, 50);
@@ -339,9 +360,9 @@ class PDFGenerator {
     
     // Document details in three columns
     const docDetailsY = 70;
-    this.addFrenchText(`N°: ${documentData.number}`, 15, docDetailsY, 10);
-    this.addFrenchText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 80, docDetailsY, 10);
-    this.addFrenchText(`Réf fournisseur: ${documentData.Supplier?.name || 'N/A'}`, 150, docDetailsY, 10);
+    this.addText(`N°: ${documentData.number}`, 15, docDetailsY, 10);
+    this.addText(`Date: ${new Date(documentData.createdAt).toLocaleDateString('fr-FR')}`, 80, docDetailsY, 10);
+    this.addText(`Réf fournisseur: ${documentData.Supplier?.name || 'N/A'}`, 150, docDetailsY, 10);
     
     // Vertical separators for document details
     this.doc.line(70, docDetailsY - 5, 70, docDetailsY + 5);
@@ -355,47 +376,72 @@ class PDFGenerator {
 
     // Order details
     if (orderInfo.deliveryDate) {
-      this.addFrenchText(`Date de livraison souhaitée: ${orderInfo.deliveryDate}`, 15, 80, 8);
+      this.addText(`Date de livraison souhaitée: ${orderInfo.deliveryDate}`, 15, 80, 8);
     }
 
     // Table headers
     const headers = ['Code', 'Description', 'Qté', 'P.U', 'Total'];
     
     let tableData: any[][] = [];
-    if (documentData.items && documentData.items.length > 0) {
-      // Use real data from document
-      tableData = documentData.items.map(item => [
-        item.code,
-        item.description,
-        item.quantity.toString(),
-        item.unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        item.total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      ]);
-    } else if (orderInfo.products && orderInfo.products.length > 0) {
-      // Parse products from notes
-      tableData = orderInfo.products.map((product: string) => {
-        const parts = product.split(':');
-        const codeDesc = parts[0] || '';
-        const details = parts[1] || '';
-        
-        const codeMatch = codeDesc.match(/^([^-]+)/);
-        const descMatch = codeDesc.match(/- (.+)$/);
-        const detailsMatch = details.match(/(\d+) (\w+) × ([\d,]+) DH = ([\d,]+) DH/);
-        
-        return [
-          codeMatch ? codeMatch[1].trim() : '',
-          descMatch ? descMatch[1].trim() : '',
-          detailsMatch ? detailsMatch[1] : '',
-          detailsMatch ? detailsMatch[3] : '',
-          detailsMatch ? detailsMatch[4] : ''
+    
+    // Try to get structured data from localStorage first (from the view table)
+    const structuredData = localStorage.getItem(`document_${documentData.id}_structured_data`);
+    if (structuredData) {
+      try {
+        const parsedData = JSON.parse(structuredData);
+        tableData = parsedData.map((item: any) => [
+          item.code || '',
+          item.name || '', // Use the exact name from structured data
+          item.quantity || '',
+          item.unitPrice || '',
+          item.total || ''
+        ]);
+      } catch (error) {
+        console.error('Error parsing structured data:', error);
+      }
+    }
+    
+    // Fallback to original parsing if no structured data
+    if (tableData.length === 0) {
+      if (documentData.items && documentData.items.length > 0) {
+        // Use real data from document - copy exactly as is
+        tableData = documentData.items.map(item => [
+          item.code || '',
+          item.description || '', // Copy exactly without any modification
+          item.quantity ? item.quantity.toString() : '',
+          item.unitPrice ? item.unitPrice.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
+          item.total ? item.total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
+        ]);
+      } else if (orderInfo.products && orderInfo.products.length > 0) {
+        // Parse products from notes - copy exactly without modification
+        tableData = orderInfo.products.map((product: string) => {
+          const parts = product.split(':');
+          const codeDesc = parts[0] || '';
+          const details = parts[1] || '';
+          
+          // Split only on the first ' - ' to preserve any other dashes in Arabic text
+          const firstDashIndex = codeDesc.indexOf(' - ');
+          const code = firstDashIndex > 0 ? codeDesc.substring(0, firstDashIndex) : codeDesc;
+          const description = firstDashIndex > 0 ? codeDesc.substring(firstDashIndex + 3) : '';
+          
+          // Parse details (quantity, unit, price, total) - copy exactly
+          const detailsMatch = details.match(/(\d+(?:\.\d+)?)\s+(\w+)\s+×\s+([\d,]+)\s+DH\s+=\s+([\d,]+)\s+DH/);
+          
+          return [
+            code, // Copy exactly
+            description, // Copy exactly - no trim, no modification
+            detailsMatch ? detailsMatch[1] : '',
+            detailsMatch ? detailsMatch[3] : '',
+            detailsMatch ? detailsMatch[4] : ''
+          ];
+        });
+      } else {
+        // Fallback sample data
+        tableData = [
+          ['P001', 'Produit 1', '10', '50,00', '500,00'],
+          ['P002', 'Produit 2', '5', '30,00', '150,00']
         ];
-      });
-    } else {
-      // Fallback sample data
-      tableData = [
-        ['P001', 'Produit 1', '10', '50,00', '500,00'],
-        ['P002', 'Produit 2', '5', '30,00', '150,00']
-      ];
+      }
     }
 
     this.drawTable(headers, tableData, 90);
@@ -403,13 +449,13 @@ class PDFGenerator {
     // Total section with border
     const totalY = 90 + 8 + (tableData.length * 8) + 10;
     this.doc.rect(15, totalY, 180, 8, 'S');
-    this.addFrenchText('Total:', 20, totalY + 5, 10);
-    this.addFrenchText(`${documentData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, totalY + 5, 10, 'right');
+    this.addText('Total:', 20, totalY + 5, 10);
+    this.addText(`${documentData.amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, totalY + 5, 10, 'right');
     
     // Additional notes
     if (orderInfo.notes) {
-      this.addFrenchText('Notes:', 15, totalY + 20, 8);
-      this.addFrenchText(orderInfo.notes, 15, totalY + 27, 7);
+      this.addText('Notes:', 15, totalY + 20, 8);
+      this.addText(orderInfo.notes, 15, totalY + 27, 7);
     }
 
     return this.doc;

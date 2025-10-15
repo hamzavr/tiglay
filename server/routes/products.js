@@ -80,11 +80,78 @@ router.post('/', [auth, authorize('admin', 'manager')], [
     const payload = { ...req.body };
     if (payload.expiryDate === '') payload.expiryDate = null;
     if (payload.arrivalDate === '') payload.arrivalDate = null;
+    if (payload.supplierId === '') payload.supplierId = null;
 
-    // Solution robuste: si un produit avec le même code existe (même inactif), on le réactive et on met à jour les champs
+    console.log('Received product data:', {
+      code: payload.code,
+      supplierId: payload.supplierId,
+      name: payload.name
+    });
+    
+    // Vérifier si un produit avec le même code existe
     const existing = await Product.findOne({ where: { code: payload.code } });
     if (existing) {
-      await existing.update({
+      console.log('Found existing product:', {
+        id: existing.id,
+        code: existing.code,
+        supplierId: existing.supplierId,
+        name: existing.name
+      });
+      // Si le fournisseur est différent, créer un nouveau produit
+      const existingSupplierId = existing.supplierId || null;
+      const newSupplierId = payload.supplierId || null;
+      
+      // Si les deux sont null/undefined, considérer comme même fournisseur
+      const hasDifferentSupplier = (
+        // Les deux ont des supplierId mais ils sont différents
+        (existingSupplierId && newSupplierId && existingSupplierId !== newSupplierId) ||
+        // L'existant a un supplierId mais le nouveau n'en a pas
+        (existingSupplierId && !newSupplierId) ||
+        // L'existant n'a pas de supplierId mais le nouveau en a un
+        (!existingSupplierId && newSupplierId)
+      );
+      
+      console.log('Supplier comparison:', {
+        existingSupplierId,
+        newSupplierId,
+        hasDifferentSupplier
+      });
+      
+      if (hasDifferentSupplier) {
+        console.log('Different supplier detected, creating new product:', {
+          existingSupplierId: existing.supplierId,
+          newSupplierId: payload.supplierId,
+          productCode: payload.code
+        });
+        // Créer un nouveau produit avec un code unique
+        const newCode = `${payload.code}-${Date.now()}`;
+        const newProductPayload = { ...payload, code: newCode };
+        if (!newProductPayload.supplierId) {
+          delete newProductPayload.supplierId;
+        }
+        try {
+          const newProduct = await Product.create(newProductPayload);
+          return res.status(201).json(newProduct);
+        } catch (createError) {
+          // Si l'erreur est due à la colonne supplierId qui n'existe pas, essayer sans ce champ
+          if (createError.message && createError.message.includes('supplierId')) {
+            delete newProductPayload.supplierId;
+            const newProduct = await Product.create(newProductPayload);
+            return res.status(201).json(newProduct);
+          }
+          throw createError;
+        }
+      } else {
+        console.log('Same supplier detected, updating existing product:', {
+          existingSupplierId: existing.supplierId,
+          newSupplierId: payload.supplierId,
+          productCode: payload.code
+        });
+      }
+      
+      // Mettre à jour le produit existant seulement si les fournisseurs sont identiques
+      if (!hasDifferentSupplier) {
+        await existing.update({
         name: payload.name ?? existing.name,
         nameAr: payload.nameAr ?? existing.nameAr,
         description: payload.description ?? existing.description,
@@ -99,15 +166,38 @@ router.post('/', [auth, authorize('admin', 'manager')], [
         image: payload.image ?? existing.image,
         missingQuantity: payload.missingQuantity ?? existing.missingQuantity ?? 0,
         surplusQuantity: payload.surplusQuantity ?? existing.surplusQuantity ?? 0,
+        supplierId: payload.supplierId || existing.supplierId,
         isActive: true
-      });
-      return res.json(existing);
+        });
+        return res.json(existing);
+      }
     }
 
-    const product = await Product.create(payload);
-    return res.status(201).json(product);
+    // Ne pas inclure supplierId s'il est vide ou null
+    const createPayload = { ...payload };
+    if (!createPayload.supplierId) {
+      delete createPayload.supplierId;
+    }
+    
+    try {
+      const product = await Product.create(createPayload);
+      return res.status(201).json(product);
+    } catch (createError) {
+      // Si l'erreur est due à la colonne supplierId qui n'existe pas, essayer sans ce champ
+      if (createError.message && createError.message.includes('supplierId')) {
+        delete createPayload.supplierId;
+        const product = await Product.create(createPayload);
+        return res.status(201).json(product);
+      }
+      throw createError;
+    }
   } catch (error) {
-    console.error(error);
+    console.error('Error creating product:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     if (error.name === 'SequelizeUniqueConstraintError') {
       // En dernier recours, renvoyer succès idempotent en retrouvant le produit et en le mettant à jour
       try {
@@ -141,9 +231,28 @@ router.put('/:id', [auth, authorize('admin', 'manager')], async (req, res) => {
     const payload = { ...req.body };
     if (payload.expiryDate === '') payload.expiryDate = null;
     if (payload.arrivalDate === '') payload.arrivalDate = null;
+    if (payload.supplierId === '') payload.supplierId = null;
 
-    await product.update(payload);
-    res.json(product);
+    console.log('Updating product:', {
+      id: req.params.id,
+      supplierId: payload.supplierId,
+      name: payload.name
+    });
+
+    try {
+      await product.update(payload);
+      res.json(product);
+    } catch (updateError) {
+      console.error('Error updating product:', updateError);
+      // Si l'erreur est due à la colonne supplierId qui n'existe pas, essayer sans ce champ
+      if (updateError.message && updateError.message.includes('supplierId')) {
+        delete payload.supplierId;
+        await product.update(payload);
+        res.json(product);
+      } else {
+        throw updateError;
+      }
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

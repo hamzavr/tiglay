@@ -73,6 +73,8 @@ const ProductsList: React.FC = () => {
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem('productsList', JSON.stringify(products));
+      // Émettre un événement personnalisé pour notifier les autres composants
+      window.dispatchEvent(new CustomEvent('productsUpdated'));
     }
   }, [products, isLoaded]);
 

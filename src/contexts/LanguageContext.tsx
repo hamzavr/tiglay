@@ -326,7 +326,10 @@ const translations = {
     orderStatus: 'حالة الطلب',
     orderAmount: 'مبلغ الطلب',
     orderDetails: 'تفاصيل الطلب',
-    noOrdersFound: 'لم يتم العثور على طلبات',
+    orderTotal: 'إجمالي الطلب',
+    noOrdersFound: 'لا توجد طلبات',
+    noOrdersDescription: 'لم يتم العثور على أي طلبات لهذا المورد',
+    noItemsInOrder: 'لا توجد عناصر في هذا الطلب',
     orderStatusDraft: 'مسودة',
     orderStatusSent: 'مرسل',
     orderStatusPaid: 'مدفوع',
@@ -1377,6 +1380,8 @@ const translations = {
     numberOfSales: 'عدد المبيعات',
     averageBasket: 'متوسط السلة',
     badSales: 'المبيعات السيئة',
+    totalPurchase: 'إجمالي المشتريات',
+    totalSale: 'إجمالي المبيعات',
     
     // Reports page additional translations
     salesReport: 'تقرير المبيعات',
@@ -2207,7 +2212,10 @@ const translations = {
     orderStatus: 'Statut de commande',
     orderAmount: 'Montant de commande',
     orderDetails: 'Détails de commande',
+    orderTotal: 'Total de commande',
     noOrdersFound: 'Aucune commande trouvée',
+    noOrdersDescription: 'Aucune commande n\'a été trouvée pour ce fournisseur',
+    noItemsInOrder: 'Aucun article dans cette commande',
     orderStatusDraft: 'Brouillon',
     orderStatusSent: 'Envoyée',
     orderStatusPaid: 'Payée',
@@ -2766,6 +2774,8 @@ const translations = {
     numberOfSales: 'Nombre de ventes',
     averageBasket: 'Panier moyen',
     badSales: 'Mauvaises ventes',
+    totalPurchase: 'Total d\'achat',
+    totalSale: 'Total de vente',
     
     // Reports page additional translations
     salesReport: 'Rapport des ventes',

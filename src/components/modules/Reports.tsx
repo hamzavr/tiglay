@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, TrendingDown, Calendar, AlertTriangle, Package, Users, DollarSign } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, Package, Users, DollarSign, ShoppingCart, Store } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApi } from '../../hooks/useApi';
 import { salesAPI, productsAPI, clientsAPI } from '../../services/api';
@@ -42,10 +42,6 @@ interface Client {
 
 const Reports: React.FC = () => {
   const { t } = useLanguage();
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
-  const [selectedReport, setSelectedReport] = useState('sales');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
 
   // API calls for real data
   const { data: salesStats, loading: salesLoading, execute: fetchSalesStats } = useApi(salesAPI.getStats);
@@ -75,11 +71,22 @@ const Reports: React.FC = () => {
     const totalSalesCount = salesStats?.totalSales || 0;
     const averageCart = totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
 
+    // Calculer les totaux d'achat et de vente basés sur le stock actuel
+    const totalPurchaseValue = safeProducts.reduce((sum, product) => {
+      return sum + (product.stock * product.buyPrice);
+    }, 0);
+
+    const totalSaleValue = safeProducts.reduce((sum, product) => {
+      return sum + (product.stock * product.sellPrice);
+    }, 0);
+
     return {
       totalRevenue,
       totalProfit,
       totalSalesCount,
-      averageCart
+      averageCart,
+      totalPurchaseValue,
+      totalSaleValue
     };
   };
 
@@ -137,19 +144,6 @@ const Reports: React.FC = () => {
   const clientsWithHighCredit = getClientsWithHighCredit();
   const monthlyData = generateMonthlyData();
 
-  const reportTypes = {
-    sales: t('salesReport'),
-    inventory: t('inventoryReport'),
-    profit: t('profitReport'),
-    clients: t('clientsReport')
-  };
-
-  const periods = {
-    week: t('thisWeek'),
-    month: t('thisMonth'),
-    quarter: t('thisQuarter'),
-    year: t('thisYear')
-  };
 
 
   return (
@@ -160,100 +154,44 @@ const Reports: React.FC = () => {
         <p className="text-gray-600 dark:text-gray-400">Analyses et rapports détaillés en temps réel</p>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('reportType')}
-            </label>
-            <select
-              value={selectedReport}
-              onChange={(e) => setSelectedReport(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              {Object.entries(reportTypes).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('period')}
-            </label>
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            >
-              {Object.entries(periods).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('startDate')}
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('endDate')}
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <StatsCard
           title={t('revenue')}
           value={`${stats.totalRevenue.toLocaleString()} DH`}
           icon={<TrendingUp className="w-6 h-6" />}
           color="green"
-          trend={12}
         />
         <StatsCard
           title={t('netProfit')}
           value={`${stats.totalProfit.toLocaleString()} DH`}
           icon={<BarChart3 className="w-6 h-6" />}
           color="blue"
-          trend={8}
         />
         <StatsCard
           title={t('numberOfSales')}
           value={stats.totalSalesCount.toString()}
           icon={<Package className="w-6 h-6" />}
           color="purple"
-          trend={15}
         />
         <StatsCard
           title={t('averageBasket')}
           value={`${stats.averageCart.toLocaleString()} DH`}
           icon={<DollarSign className="w-6 h-6" />}
           color="orange"
-          trend={-3}
+        />
+        <StatsCard
+          title={t('totalPurchase')}
+          value={`${stats.totalPurchaseValue.toLocaleString()} DH`}
+          icon={<ShoppingCart className="w-6 h-6" />}
+          color="red"
+        />
+        <StatsCard
+          title={t('totalSale')}
+          value={`${stats.totalSaleValue.toLocaleString()} DH`}
+          icon={<Store className="w-6 h-6" />}
+          color="indigo"
         />
       </div>
 

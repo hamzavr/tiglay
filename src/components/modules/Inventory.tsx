@@ -27,6 +27,7 @@ interface Product {
   image?: string;
   location?: string;
   primeNumber?: number;
+  supplierId?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -45,13 +46,13 @@ interface ProductFormData {
   expiryDate: string;
   location: string;
   primeNumber?: number;
+  supplierId?: string;
   image?: string;
 }
 
 const Inventory: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -72,7 +73,8 @@ const Inventory: React.FC = () => {
     minStock: 5,
     expiryDate: '',
     location: '',
-    image: ''
+    image: '',
+    supplierId: ''
   });
 
   const { data: products = [], loading: productsLoading, execute: fetchProducts } = useApi(productsAPI.getAll);
@@ -106,6 +108,7 @@ const Inventory: React.FC = () => {
           expiryDate: '',
           location: productData.location || '',
           primeNumber: productData.primeNumber || 2,
+          supplierId: productData.supplierId || '',
           image: ''
         });
         
@@ -143,6 +146,7 @@ const Inventory: React.FC = () => {
         expiryDate: '',
         location: productData.location || '',
         primeNumber: productData.primeNumber || 0,
+        supplierId: productData.supplierId || '',
         image: ''
       });
       
@@ -160,13 +164,10 @@ const Inventory: React.FC = () => {
   // Ensure products is always an array
   const safeProducts = Array.isArray(products) ? products : [];
 
-  const categories = ['all', 'Ciment', 'Briques', 'Sable', 'Gravier', 'Fer', 'Plomberie', 'Électricité', 'Outillage'];
-
   const filteredProducts = safeProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all';
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   const isLowStock = (product: Product) => product.stock <= product.minStock;
@@ -192,6 +193,7 @@ const Inventory: React.FC = () => {
       surplusQuantity: 0,
       expiryDate: '',
       location: '',
+      supplierId: '',
       image: ''
     });
     setIsModalOpen(true);
@@ -212,6 +214,7 @@ const Inventory: React.FC = () => {
       expiryDate: product.expiryDate || '',
       location: product.location || '',
       primeNumber: product.primeNumber || 0,
+      supplierId: product.supplierId || '',
       image: product.image || ''
     });
     setIsModalOpen(true);
@@ -232,6 +235,7 @@ const Inventory: React.FC = () => {
       surplusQuantity: 0,
       expiryDate: '',
       location: '',
+      supplierId: '',
       image: ''
     });
   };
@@ -256,6 +260,8 @@ const Inventory: React.FC = () => {
         stock: formData.quantity
       };
       
+      console.log('Sending product data to API:', apiData);
+      
       if (editingProduct) {
         await updateProduct(editingProduct.id, apiData);
       } else {
@@ -274,6 +280,24 @@ const Inventory: React.FC = () => {
           const itemToProcess = list.find((it: any) => it.id === removeId);
           
           if (itemToProcess) {
+            // Marquer le produit comme traité
+            const processedProducts = JSON.parse(localStorage.getItem('processedProducts') || '[]');
+            const processedProduct = {
+              code: itemToProcess.code,
+              documentId: itemToProcess.documentId || 'unknown',
+              processedAt: new Date().toISOString()
+            };
+            
+            // Vérifier si ce produit n'est pas déjà marqué comme traité
+            const alreadyProcessed = processedProducts.some((p: any) => 
+              p.code === processedProduct.code && p.documentId === processedProduct.documentId
+            );
+            
+            if (!alreadyProcessed) {
+              processedProducts.push(processedProduct);
+              localStorage.setItem('processedProducts', JSON.stringify(processedProducts));
+            }
+            
             // Si le produit a une quantité surplus, on garde seulement la quantité surplus
             if (itemToProcess.surplusQuantity && itemToProcess.surplusQuantity > 0) {
               const updatedItem = {
@@ -387,18 +411,6 @@ const Inventory: React.FC = () => {
             </div>
           </div>
           
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            title="Filtrer par catégorie"
-            aria-label="Filtrer par catégorie"
-          >
-            <option value="all">{t('allCategories')}</option>
-            {categories.slice(1).map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
         </div>
       </Card>
 
